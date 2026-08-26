@@ -1,0 +1,580 @@
+---====== Services ======---
+
+local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local Camera = workspace.CurrentCamera
+if not Camera then
+	workspace:GetPropertyChangedSignal("CurrentCamera"):Wait()
+	Camera = workspace.CurrentCamera
+end
+print("[ReboundEffect] Camera OK:", Camera)
+
+---====== Jumpscare Function ======---
+
+local function PlayJumpscare()
+	local existingGui = playerGui:FindFirstChild("ReboundJumpscareGui")
+	if existingGui then
+		existingGui:Destroy()
+	end
+
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "ReboundJumpscareGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.IgnoreGuiInset = true
+	screenGui.DisplayOrder = 999999
+	screenGui.Parent = playerGui
+
+	local bg = Instance.new("Frame")
+	bg.Name = "Background"
+	bg.Size = UDim2.fromScale(1, 1)
+	bg.Position = UDim2.fromScale(0, 0)
+	bg.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+	bg.BackgroundTransparency = 0
+	bg.BorderSizePixel = 0
+	bg.Parent = screenGui
+
+	local staticOverlay = Instance.new("ImageLabel")
+	staticOverlay.Name = "StaticOverlay"
+	staticOverlay.Size = UDim2.fromScale(1, 1)
+	staticOverlay.Position = UDim2.fromScale(0, 0)
+	staticOverlay.BackgroundTransparency = 0
+	staticOverlay.ImageTransparency = 0.8
+	staticOverlay.ScaleType = Enum.ScaleType.Stretch
+	staticOverlay.ZIndex = 2
+	staticOverlay.Parent = screenGui
+
+	local faceImage = Instance.new("ImageLabel")
+	faceImage.Name = "ReboundFace"
+	faceImage.Size = UDim2.new(0, 250, 0, 250)
+	faceImage.Position = UDim2.fromScale(0.5, 0.5)
+	faceImage.AnchorPoint = Vector2.new(0.5, 0.5)
+	faceImage.BackgroundTransparency = 1
+	faceImage.Image = "rbxassetid://13272951808"
+	faceImage.ImageColor3 = Color3.fromRGB(255, 0, 0)
+	faceImage.ScaleType = Enum.ScaleType.Stretch
+	faceImage.ZIndex = 3
+	faceImage.Parent = screenGui
+
+	local jsSound = Instance.new("Sound")
+	jsSound.Name = "ReboundJumpscareSound"
+	jsSound.SoundId = "rbxassetid://109582246349306"
+	jsSound.Volume = 10
+	jsSound.Parent = workspace
+
+	local jsSound5 = Instance.new("Sound")
+	jsSound5.Name = "ReboundJumpscareSound5"
+	jsSound5.SoundId = "rbxassetid://109582246349306"
+	jsSound5.Volume = 10
+	jsSound5.PlaybackSpeed = Random.new():NextNumber(0.3, 0.9)
+	jsSound5.Parent = workspace
+
+	local colors = {
+		Color3.fromRGB(146, 255, 237),
+		Color3.fromRGB(0, 251, 255),
+		Color3.fromRGB(0, 123, 255),
+		Color3.fromRGB(197, 222, 255),
+		Color3.fromRGB(20, 144, 182),
+		Color3.fromRGB(255, 255, 255),
+		Color3.fromRGB(160, 206, 255)
+	}
+
+	local staticImages = {
+		"rbxassetid://236777652",
+		"rbxassetid://236543215"
+	}
+
+	local staticRotations = {0, -180, 180}
+
+	local function playSoundSafe(soundObj, timePos, speed, volume)
+		if not soundObj or not soundObj.Parent then return end
+		pcall(function()
+			soundObj:Stop()
+			soundObj.TimePosition = timePos or 0
+			soundObj.PlaybackSpeed = speed or 1
+			soundObj.Volume = volume or 10
+			soundObj:Play()
+		end)
+	end
+
+	local function getRandomDifferent(tab, current)
+		local picked = tab[math.random(1, #tab)]
+		if picked == current then
+			task.wait()
+			return getRandomDifferent(tab, current)
+		end
+		return picked
+	end
+
+	local isJumpscaring = true
+
+	pcall(function()
+		game.SoundService.Main.Volume = 0
+	end)
+
+	playSoundSafe(jsSound, 0, math.random(75, 125) / 100, 10)
+
+	task.spawn(function()
+		local lastRot = staticOverlay.Rotation
+		local lastImg = staticOverlay.Image
+
+		while isJumpscaring and screenGui.Parent do
+			task.wait(0.066666666666666666)
+
+			local currentRot = faceImage.Rotation
+			local v2
+
+			if math.random(1, 2) == 1 then
+				v2 = -currentRot
+			else
+				v2 = currentRot + math.random(-360, 360)
+			end
+
+			local v3 = v2 + math.random(-360, 360)
+
+			if v3 > 180 then
+				v3 = 180
+			elseif v3 < -180 then
+				v3 = -180
+			end
+
+			staticOverlay.BackgroundColor3 = colors[math.random(1, #colors)]
+			faceImage.ImageColor3 = colors[math.random(1, #colors)]
+
+			lastRot = getRandomDifferent(staticRotations, lastRot)
+			lastImg = getRandomDifferent(staticImages, lastImg)
+
+			staticOverlay.Rotation = lastRot
+			staticOverlay.Image = lastImg
+			local v10 = TweenInfo.new(0.066666666666666666)
+			local v11 = math.random(150, 450)
+			local v12 = math.random(75, 150)
+			local v13 = {Size = UDim2.new(0, v11, 0, v12)}
+			TweenService:Create(faceImage, v10, v13):Play()
+
+			task.delay(0.03333333333333333, function()
+				if faceImage and faceImage.Parent and isJumpscaring then
+					local v14 = TweenInfo.new(0.05333333333333333)
+					local v15 = math.random(225, 250)
+					local v16 = math.random(150, 450)
+					local v17 = {Size = UDim2.new(0, v15, 0, v16)}
+					TweenService:Create(faceImage, v14, v17):Play()
+				end
+			end)
+
+			local v19 = TweenInfo.new(0.05333333333333333, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			local v20 = math.random(150, 800) / 1000
+			local v21 = math.random(150, 800) / 1000
+			local v22 = {
+				Position = UDim2.new(v20, 0, v21, 0),
+				Rotation = -v3
+			}
+			TweenService:Create(faceImage, v19, v22):Play()
+
+			playSoundSafe(jsSound, 0.25 + math.random() / 10, math.random(50, 125) / 100, 10)
+		end
+	end)
+
+	task.delay(2.5, function()
+		if not screenGui.Parent then return end
+
+		isJumpscaring = false
+		if jsSound then jsSound:Destroy() end
+
+		task.wait(0.1)
+		pcall(function() jsSound5:Play() end)
+
+		local climaxTween = TweenService:Create(faceImage, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = UDim2.new(1, 0, 1, 0),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Rotation = math.random(-25, 25),
+			ImageColor3 = Color3.fromRGB(255, 0, 0)
+		})
+		climaxTween:Play()
+
+		task.delay(1, function()
+			TweenService:Create(faceImage, TweenInfo.new(2), {ImageTransparency = 1}):Play()
+
+			TweenService:Create(bg, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
+			TweenService:Create(staticOverlay, TweenInfo.new(1), {
+				BackgroundTransparency = 1,
+				ImageTransparency = 1
+			}):Play()
+
+			pcall(function()
+				game.SoundService.Main.Volume = 0.5
+			end)
+
+			task.delay(2, function()
+				if jsSound5 then jsSound5:Destroy() end
+				if screenGui then screenGui:Destroy() end
+			end)
+		end)
+	end)
+end
+
+---====== Blue Screen + Shake Effect ======---
+
+local ColorCorrection = Instance.new("ColorCorrectionEffect")
+ColorCorrection.Name = "ReboundEffect"
+ColorCorrection.TintColor = Color3.fromRGB(255, 0, 0)
+ColorCorrection.Brightness = 0
+ColorCorrection.Contrast = 0
+ColorCorrection.Saturation = 0
+ColorCorrection.Parent = Lighting
+
+local Sound1 = Instance.new("Sound")
+Sound1.Name = "ReboundSound1"
+Sound1.SoundId = "rbxassetid://136836151370178"
+Sound1.Volume = 5
+Sound1.Parent = Camera
+
+local Sound2 = Instance.new("Sound")
+Sound2.Name = "ReboundSound2"
+Sound2.SoundId = "rbxassetid://18920812603"
+Sound2.Volume = 5
+Sound2.Parent = Camera
+
+local Sound3 = Instance.new("Sound")
+Sound3.Name = "ReboundSound3"
+Sound3.SoundId = "rbxassetid://111768657135706"
+Sound3.Volume = 5
+Sound3.Parent = Camera
+
+local Sound4 = Instance.new("Sound")
+Sound4.Name = "ReboundSound4"
+Sound4.SoundId = "rbxassetid://9120826936"
+Sound4.Volume = 5
+Sound4.Parent = Camera
+
+local Sound5 = Instance.new("Sound")
+Sound5.Name = "ReboundSound5"
+Sound5.SoundId = "rbxassetid://9120805470"
+Sound5.Volume = 5
+Sound5.Parent = Camera
+
+local shaking = false
+local shakeConnection = nil
+local shakeIntensity = 0.15
+local currentColorTween = nil
+
+local function StartBlueScreen()
+	pcall(function() Sound1:Stop() end)
+	pcall(function() Sound2:Stop() end)
+	pcall(function() Sound3:Stop() end)
+	pcall(function() Sound4:Stop() end)
+	pcall(function() Sound5:Stop() end)
+
+	pcall(function() Sound1:Play() end)
+	pcall(function() Sound2:Play() end)
+	pcall(function() Sound3:Play() end)
+	pcall(function() Sound4:Play() end)
+	pcall(function() Sound5:Play() end)
+
+	if currentColorTween then
+		currentColorTween:Cancel()
+		currentColorTween = nil
+	end
+
+	currentColorTween = TweenService:Create(ColorCorrection, TweenInfo.new(0.15, Enum.EasingStyle.Sine), {
+		TintColor = Color3.fromRGB(255, 0, 0),
+		Brightness = -0.3,
+		Contrast = 0.2,
+		Saturation = -0.4
+	})
+	currentColorTween:Play()
+
+	if shakeConnection then
+		shakeConnection:Disconnect()
+		shakeConnection = nil
+	end
+
+	shaking = true
+	shakeConnection = RunService.RenderStepped:Connect(function(dt)
+		if not shaking then
+			shakeConnection:Disconnect()
+			return
+		end
+
+		local offset = Vector3.new(
+			(math.random() - 0.5) * shakeIntensity,
+			(math.random() - 0.5) * shakeIntensity,
+			0
+		)
+		Camera.CFrame = Camera.CFrame * CFrame.new(offset)
+	end)
+end
+
+local function EndBlueScreen()
+	shaking = false
+
+	if currentColorTween then
+		currentColorTween:Cancel()
+		currentColorTween = nil
+	end
+
+	currentColorTween = TweenService:Create(ColorCorrection, TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		TintColor = Color3.fromRGB(255, 0, 0),
+		Brightness = 0,
+		Contrast = 0,
+		Saturation = 0
+	})
+	currentColorTween:Play()
+end
+
+---====== Load spawner ======---
+
+StartBlueScreen()
+
+local Spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/DOORS-Entity-Spawner-V2/main/init.luau"))()
+
+---====== Hàm tạo & chạy Entity (100% không sợ kẹt state) ======---
+
+local spawnCount = 0
+local maxSpawns = 6
+local isRespawnCycle = false
+local isProcessingRoomRoll = false
+local isRebounding = false
+local canRollForNextSpawn = false
+
+local function SpawnReboundEntity()
+	spawnCount += 1
+	print("📢 [SPAWN] Đang khởi tạo và kích hoạt Rebound lần thứ " .. spawnCount .. "/" .. maxSpawns)
+
+	local entity = Spawner:Create({
+		Entity = {
+			Name = "Multi Rebound",
+			Asset = "13390488111",
+			HeightOffset = 0
+		},
+		Lights = {
+			Flicker = {
+				Enabled = true,
+				Duration = 1
+			},
+			Shatter = true,
+			Repair = false
+		},
+		Earthquake = {
+			Enabled = true
+		},
+		CameraShake = {
+			Enabled = true,
+			Range = 500,
+			Values = {2, 30, 0.1, 1}
+		},
+		Movement = {
+			Speed = 95,
+			Delay = 2,
+			Reversed = true
+		},
+		Rebounding = {
+			Enabled = true,
+			Type = "Ambush",
+			Min = 1,
+			Max = 2,
+			Delay = 4
+		},
+		Damage = {
+			Enabled = true,
+			Range = 40,
+			Amount = 125
+		},
+		Crucifixion = {
+			Enabled = true,
+			Range = 40,
+			Resist = false,
+			Break = true
+		},
+		Death = {
+			Type = "Guiding",
+			Hints = {"You die by Rebound.", "If you see the screen turn blue or hear the lightning sound..hide..", "That's all...", "Good luck.."},
+			Cause = "Rebound"
+		}
+	})
+
+	entity:SetCallback("OnSpawned", function()
+		print("📢 [SPAWN] Entity đã xuất hiện thành công!")
+		if isRespawnCycle then
+			isRespawnCycle = false
+			pcall(function()
+				Sound3.Volume = 10
+				Sound3:Play()
+			end)
+		end
+	end)
+
+	local destroyedRooms = {}
+	entity:SetCallback("OnEnterRoom", function(room: Model, firstTime: boolean)
+		if room and not destroyedRooms[room] then
+			destroyedRooms[room] = true
+
+			task.spawn(function()
+				task.wait(0.05)
+
+				pcall(function()
+					local breakSound = Instance.new("Sound")
+					breakSound.SoundId = "rbxassetid://9114223171"
+					breakSound.Volume = 2.5
+					breakSound.Parent = room:FindFirstChild("Assets") or room
+					breakSound:Play()
+					breakSound.Ended:Connect(function() breakSound:Destroy() end)
+				end)
+
+				local assetContainer = room:FindFirstChild("Assets") or room
+				local breakSounds = {
+					"rbxassetid://9125992545",
+					"rbxassetid://4004052860",
+					"rbxassetid://7142857558",
+					"rbxassetid://7142843615",
+					"rbxassetid://7142857558",
+					"rbxassetid://2612674531",
+					"rbxassetid://2174790942"
+				}
+				local blacklist = {"wardrobe", "bed", "rug", "key", "drawer", "book", "breaker", "table", "desk", "gold", "dresser"}
+
+				for _, item in pairs(assetContainer:GetChildren()) do
+					if item:IsA("Model") and item.Name ~= "Door" and item.Name ~= "HidingSpots" then
+						local isBlacklisted = false
+						local itemNameLower = string.lower(item.Name)
+						for _, word in ipairs(blacklist) do
+							if string.find(itemNameLower, word) then
+								isBlacklisted = true
+								break
+							end
+						end
+
+						if not isBlacklisted then
+							local primary = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")
+							if primary then
+								task.spawn(function()
+									for _, v in ipairs(item:GetDescendants()) do
+										if v:IsA("BasePart") then
+											local lowerName = string.lower(v.Name)
+											if not string.find(lowerName, "floor") and not string.find(lowerName, "hitbox") then
+												task.wait(math.random(1, 4) / 100)
+												local randomSoundId = breakSounds[math.random(1, #breakSounds)]
+
+												pcall(function()
+													local s = Instance.new("Sound")
+													s.SoundId = randomSoundId
+													s.Volume = math.random(12, 24) / 10
+													s.PlaybackSpeed = math.random(85, 115) / 100
+													s.RollOffMaxDistance = 100
+													s.Parent = v
+													s:Play()
+													s.Ended:Connect(function()
+														s:Destroy()
+													end)
+												end)
+
+												v.Anchored = false
+												v.CanCollide = true
+												v.CustomPhysicalProperties = PhysicalProperties.new(0.01, 0.01, 0.5, 1, 1)
+
+												pcall(function()
+													if v:CanSetNetworkOwnership() then
+														v:SetNetworkOwner(player)
+													end
+												end)
+
+												v.CFrame = v.CFrame + Vector3.new(0, 0.05, 0)
+											end
+										end
+									end
+								end)
+
+								primary.Anchored = true
+								task.wait()
+								primary.Anchored = false
+
+								primary.AssemblyLinearVelocity = Vector3.new(
+									math.random(-60, 60),
+									math.random(20, 50),
+									math.random(-60, 60)
+								)
+
+								primary.AssemblyAngularVelocity = Vector3.new(
+									math.random(-25, 25),
+									math.random(-25, 25),
+									math.random(-25, 25)
+								)
+							end
+						end
+					end
+				end
+			end)
+		end
+	end)
+
+	entity:SetCallback("OnRebounding", function(startOfRebound: boolean)
+		if startOfRebound == true then
+			isRebounding = true
+			StartBlueScreen()
+		else
+			isRebounding = false
+			EndBlueScreen()
+		end
+	end)
+
+	entity:SetCallback("OnDespawned", function()
+		if spawnCount < maxSpawns then
+			canRollForNextSpawn = true
+			print("[Spawner] 🟢 Lần spawn này đã kết thúc. Hãy mở cửa sang phòng tiếp theo (Đã đạt: " .. spawnCount .. "/" .. maxSpawns .. ")")
+		else
+			print("[Spawner] 🛑 Đã hoàn thành đủ giới hạn tối đa 6/6 lần spawn!")
+		end
+	end)
+
+	entity:SetCallback("OnDamagePlayer", function(newHealth: number)
+		if newHealth <= 0 then
+			PlayJumpscare()
+		end
+	end)
+
+	entity:Run(true)
+end
+
+---====== LẮNG NGHE SỰ KIỆN PHÒNG MỚI (CHẮC CHẮN 100% ẢNH HƯỞNG) ======---
+local function SetupRoomListener()
+	local currentRooms = workspace:WaitForChild("CurrentRooms", 5)
+	if currentRooms then
+		currentRooms.ChildAdded:Connect(function(room)
+			if canRollForNextSpawn and not isRebounding and not isProcessingRoomRoll and spawnCount < maxSpawns then
+				isProcessingRoomRoll = true
+				
+				task.spawn(function()
+					task.wait(1.5) -- Đợi phòng mới load ổn định hẳn
+					
+					-- CHỈNH TỶ LỆ Ở ĐÂY: Đang để 100% (roll <= 100) để test xem nó có chịu spawn không!
+					local roll = math.random(1, 100)
+					
+					if roll <= 100 then
+						isRespawnCycle = true
+						canRollForNextSpawn = false
+						print("[Spawner] 🎯 [TRÚNG SPAWN 100%] Tiến hành gọi thực thể mới cho phòng " .. room.Name)
+						
+						task.wait(0.5)
+						SpawnReboundEntity()
+					else
+						print("[Spawner] ❌ [TRƯỢT SPAWN] Roll được: " .. roll)
+					end
+					isProcessingRoomRoll = false
+				end)
+			end
+		end)
+	else
+		warn("[Spawner] Không tìm thấy workspace.CurrentRooms!")
+	end
+end
+
+SetupRoomListener()
+
+---====== Chạy lần đầu tiên ======---
+SpawnReboundEntity()
+
