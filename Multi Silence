@@ -1,0 +1,298 @@
+---====== Services & Player ======---
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+---====== Load spawner ======---
+
+local Spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/DOORS-Entity-Spawner-V2/main/init.luau"))()
+
+---====== Create entity ======---
+
+local entity = Spawner:Create({
+	Entity = {
+		Name = "Silence",
+		Asset = "13390488111",
+		HeightOffset = 0
+	},
+	Lights = {
+		Flicker = {
+			Enabled = true,
+			Duration = 1
+		},
+		Shatter = true,
+		Repair = false
+	},
+	Earthquake = {
+		Enabled = false
+	},
+	CameraShake = {
+		Enabled = true,
+		Range = 100,
+		Values = {1.5, 20, 0.1, 1} -- Magnitude, Roughness, FadeIn, FadeOut
+	},
+	Movement = {
+		Speed = 74,
+		Delay = 2,
+		Reversed = false
+	},
+	Rebounding = {
+		Enabled = false,
+		Type = "Ambush", -- "Blitz"
+		Min = 1,
+		Max = 1,
+		Delay = 2
+	},
+	Damage = {
+		Enabled = true,
+		Range = 40,
+		Amount = 125
+	},
+	Crucifixion = {
+		Enabled = true,
+		Range = 40,
+		Resist = false,
+		Break = true
+	},
+	Death = {
+		Type = "Guiding", -- "Curious"
+		Hints = {"Death", "Hints", "Go", "Here"},
+		Cause = ""
+	}
+})
+
+---====== HIDE text effect (distance-based) ======---
+
+local fonts = {
+	Enum.Font.SourceSans, Enum.Font.Bangers, Enum.Font.Arcade,
+	Enum.Font.Fantasy, Enum.Font.Antique, Enum.Font.Cartoon,
+	Enum.Font.Creepster, Enum.Font.RobotoMono
+}
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "HideEffect"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true -- phủ luôn phần thanh trên cùng (menu/health bar), không để hở
+screenGui.DisplayOrder = 999 -- nằm trên tất cả UI khác
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Frame đen phủ toàn màn hình, dùng để fade tối/sáng dần theo khoảng cách
+local fadeFrame = Instance.new("Frame")
+fadeFrame.Name = "FadeOverlay"
+fadeFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+fadeFrame.Size = UDim2.new(1, 0, 1, 0)
+fadeFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+fadeFrame.BackgroundColor3 = Color3.fromRGB(60, 0, 0) -- đỏ đậm thay vì đen
+fadeFrame.BackgroundTransparency = 1 -- bắt đầu trong suốt (không đen)
+fadeFrame.BorderSizePixel = 0
+fadeFrame.ZIndex = 1 -- chữ HIDE nằm TRÊN lớp này để màu đỏ của chữ không bị lớp fade đè mất
+fadeFrame.Parent = screenGui
+
+-- Khoảng cách bắt đầu và kết thúc hiệu ứng
+local MAX_RANGE = 60   -- xa hơn thì không có gì
+local MIN_RANGE = 5    -- gần hơn thì full hiệu ứng
+
+-- Độ đen tối đa khi entity ở khoảng cách gần nhất (0 = đen hoàn toàn, 1 = trong suốt hoàn toàn)
+local MAX_DARKNESS_TRANSPARENCY = 0 -- đen 100% khi entity ở sát bên
+
+-- Tốc độ fade (mượt hơn thay vì đổi tức thì mỗi frame)
+local FADE_SPEED = 2 -- càng cao càng nhanh tối/sáng lại
+
+local hideConnection
+
+local function GetEntityDistance(entityModel: Model)
+	local char = player.Character
+	if not char or not char.PrimaryPart then return math.huge end
+	local ok, pivot = pcall(function() return entityModel:GetPivot() end)
+	if not ok then return math.huge end
+	return (char.PrimaryPart.Position - pivot.Position).Magnitude
+end
+
+local function StartHideEffect(entityModel: Model)
+	if hideConnection then return end
+
+	hideConnection = RunService.Heartbeat:Connect(function(dt)
+		local dist = GetEntityDistance(entityModel)
+
+		-- Tính cường độ tối cho MÀN HÌNH riêng (không return sớm như chữ HIDE,
+		-- vì cần tiếp tục fade sáng lại dần khi entity đã ra xa)
+		local darkIntensity = 1 - math.clamp((dist - MIN_RANGE) / (MAX_RANGE - MIN_RANGE), 0, 1)
+		local targetTransparency = 1 - (darkIntensity * (1 - MAX_DARKNESS_TRANSPARENCY))
+
+		-- Fade mượt tới giá trị mục tiêu thay vì nhảy cứng
+		fadeFrame.BackgroundTransparency = fadeFrame.BackgroundTransparency
+			+ (targetTransparency - fadeFrame.BackgroundTransparency) * math.clamp(FADE_SPEED * dt, 0, 1)
+
+		-- Khi entity đã ở khoảng cách gần nhất, ép thẳng về đen 100% ngay lập tức
+		-- (tránh bị kẹt ở mức xám do lerp chưa kịp bắt kịp)
+		if dist <= MIN_RANGE then
+			fadeFrame.BackgroundTransparency = MAX_DARKNESS_TRANSPARENCY
+		end
+
+		if dist > MAX_RANGE then
+			return -- chưa đủ gần, không tạo chữ HIDE (nhưng fadeFrame vẫn tự sáng dần ở trên)
+		end
+
+		-- Dùng chung độ "gần" đã tính ở trên cho chữ HIDE
+		local intensity = darkIntensity
+
+		local spawnChance = intensity
+		if math.random() > spawnChance then
+			return
+		end
+
+		-- Số ô lưới phủ kín màn hình (cols x rows), càng gần thì lưới càng dày
+		local cols = 4 + math.floor(intensity * 6) -- 4 -> 10 cột
+		local rows = 3 + math.floor(intensity * 5) -- 3 -> 8 hàng
+		local howMany = math.ceil(intensity * cols * rows * 0.5) -- chỉ lấp 1 phần ô mỗi lần, không phải toàn bộ cùng lúc
+
+		local cellW = 1 / cols
+		local cellH = 1 / rows
+
+		for i = 1, howMany do
+			local col = math.random(0, cols - 1)
+			local row = math.random(0, rows - 1)
+
+			-- vị trí ngẫu nhiên trong ô đó (dùng Scale nên tự khớp mọi kích thước màn hình, PC lẫn điện thoại)
+			local posX = (col + math.random()) * cellW
+			local posY = (row + math.random()) * cellH
+
+			local label = Instance.new("TextLabel")
+			label.AnchorPoint = Vector2.new(0.5, 0.5)
+			label.Size = UDim2.new(cellW * 0.9, 0, cellH * 0.9, 0)
+			label.Position = UDim2.new(posX, 0, posY, 0)
+			label.BackgroundTransparency = 1
+			label.Text = "HIDE"
+			label.TextColor3 = Color3.new(0, 0, 0) -- đen, để viền đỏ nổi rõ (không bị đỏ chồng đỏ)
+			label.TextTransparency = 1 - intensity -- mờ dần khi còn xa
+			label.TextStrokeColor3 = Color3.fromRGB(200, 20, 20) -- viền đỏ
+			label.TextStrokeTransparency = 0 -- viền LUÔN rõ 100%, không mờ theo khoảng cách
+			label.TextScaled = true
+			label.Font = fonts[math.random(1, #fonts)]
+			label.ZIndex = 5 -- cao hơn fadeFrame (1): chữ đỏ luôn hiện rõ, không bị lớp fade đè lên
+			label.Parent = screenGui
+
+			-- Viền neon dày hơn (UIStroke) chồng thêm lên viền chữ mặc định
+			local neonStroke = Instance.new("UIStroke")
+			neonStroke.Color = Color3.fromRGB(200, 20, 20) -- viền đỏ
+			neonStroke.Thickness = 2
+			neonStroke.Transparency = 0
+			neonStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+			neonStroke.Parent = label
+
+			-- Đổi font liên tục trong lúc label còn tồn tại
+			local lifetime = 0.4
+			local elapsed = 0
+			local fontLoop
+			fontLoop = RunService.Heartbeat:Connect(function(dt)
+				elapsed += dt
+				if not label.Parent then
+					fontLoop:Disconnect()
+					return
+				end
+				label.Font = fonts[math.random(1, #fonts)]
+				if elapsed >= lifetime then
+					fontLoop:Disconnect()
+				end
+			end)
+
+			task.delay(lifetime, function()
+				if fontLoop.Connected then
+					fontLoop:Disconnect()
+				end
+				label:Destroy()
+			end)
+		end
+	end)
+end
+
+local function StopHideEffect()
+	if hideConnection then
+		hideConnection:Disconnect()
+		hideConnection = nil
+	end
+	for _, v in ipairs(screenGui:GetChildren()) do
+		if v ~= fadeFrame then
+			v:Destroy()
+		end
+	end
+	fadeFrame.BackgroundTransparency = 1 -- reset màn hình về sáng bình thường
+end
+
+---====== Debug entity ======---
+
+entity:SetCallback("OnSpawned", function()
+	print("Entity has spawned")
+
+	-- Thử lấy Model thật của entity để tính khoảng cách
+	-- LƯU Ý: field "Model" dưới đây có thể cần đổi tên tùy theo thư viện Spawner
+	-- (vd: entity.Instance, entity.Object, entity.Rig...). Kiểm tra init.luau nếu lỗi.
+	local entityModel = entity.Model or entity.Instance or entity.Object
+	if entityModel then
+		StartHideEffect(entityModel)
+	else
+		warn("Không tìm thấy Model/Instance của entity — hiệu ứng HIDE sẽ không chạy. Kiểm tra field đúng trong thư viện Spawner.")
+	end
+end)
+
+entity:SetCallback("OnStartMoving", function()
+	print("Entity has started moving")
+end)
+
+entity:SetCallback("OnEnterRoom", function(room: Model, firstTime: boolean)
+	if firstTime == true then
+		print("Entity has entered room: ".. room.Name.. " for the first time")
+	else
+		print("Entity has entered room: ".. room.Name.. " again")
+	end
+end)
+
+entity:SetCallback("OnLookAt", function(lineOfSight: boolean)
+	if lineOfSight == true then
+		print("Player is looking at entity")
+	else
+		print("Player view is obstructed by something")
+	end
+end)
+
+entity:SetCallback("OnRebounding", function(startOfRebound: boolean)
+	if startOfRebound == true then
+		print("Entity has started rebounding")
+	else
+		print("Entity has finished rebounding")
+	end
+end)
+
+entity:SetCallback("OnDespawning", function()
+	print("Entity is despawning")
+end)
+
+entity:SetCallback("OnDespawned", function()
+	print("Entity has despawned")
+	StopHideEffect()
+end)
+
+entity:SetCallback("OnDamagePlayer", function(newHealth: number)
+	if newHealth <= 0 then
+		print("Entity has killed the player")
+	else
+		print("Entity has damaged the player")
+	end
+end)
+
+--[[
+
+DEVELOPER NOTE:
+By overwriting 'CrucifixionOverwrite' the default crucifixion callback will be replaced with your custom callback.
+
+entity:SetCallback("CrucifixionOverwrite", function()
+	print("Custom crucifixion callback")
+end)
+
+]]--
+
+---====== Run entity ======---
+
+entity:Run(true)
