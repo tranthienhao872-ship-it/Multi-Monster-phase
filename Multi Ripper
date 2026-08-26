@@ -1,0 +1,394 @@
+---====== Services & Setup ======---
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+
+getgenv().OgHungerNewSpawner = nil 
+
+local success, Spawner = pcall(function()
+	return loadstring(game:HttpGet("https://raw.githubusercontent.com/eoyoustme/Mayhem-Remake/refs/heads/main/OgHungerNewSpawner"))()
+end)
+
+if not success or not Spawner then
+	return
+end
+
+---====== Setup Overlay & Light ======---
+local pGui = LocalPlayer:WaitForChild("PlayerGui")
+local redGui = Instance.new("ScreenGui")
+redGui.Name = "RipperRedOverlay"
+redGui.IgnoreGuiInset = true
+redGui.ResetOnSpawn = false
+redGui.Parent = pGui
+
+local redFrame = Instance.new("Frame")
+redFrame.Size = UDim2.new(1, 0, 1, 0)
+redFrame.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+redFrame.BackgroundTransparency = 1
+redFrame.BorderSizePixel = 0
+redFrame.Parent = redGui
+
+local playerLight = Instance.new("PointLight")
+playerLight.Name = "RipperAura"
+playerLight.Color = Color3.fromRGB(150, 0, 0)
+playerLight.Range = 100
+playerLight.Brightness = 0
+playerLight.Enabled = false 
+
+---====== Audio Setup ======---
+local introSound = Instance.new("Sound")
+introSound.Name = "RipperIntroSound"
+introSound.SoundId = "rbxassetid://12971875415"
+introSound.Volume = 2
+introSound.Parent = SoundService
+
+local doorSound1 = Instance.new("Sound")
+doorSound1.Name = "RipperDoorSound1"
+doorSound1.SoundId = "rbxassetid://9126281820"
+doorSound1.Volume = 3
+doorSound1.Parent = SoundService
+
+local doorSound2 = Instance.new("Sound")
+doorSound2.Name = "RipperDoorSound2"
+doorSound2.SoundId = "rbxassetid://9126281769"
+doorSound2.Volume = 3
+doorSound2.Parent = SoundService
+
+local doorSound3 = Instance.new("Sound")
+doorSound3.Name = "RipperDoorSound3"
+doorSound3.SoundId = "rbxassetid://126631007956569"
+doorSound3.Volume = 3
+doorSound3.Parent = SoundService
+
+---====== Camera Shake Logic ======---
+local isShaking = false
+local camera = workspace.CurrentCamera
+
+RunService.RenderStepped:Connect(function()
+	if isShaking and camera then
+		local time = tick()
+		local magnitude = 1.2
+		local xOffset = math.sin(time * 25) * magnitude
+		local yOffset = math.cos(time * 30) * magnitude
+		camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(xOffset), math.rad(yOffset), 0)
+	end
+end)
+
+---====== Create Entity ======---
+local entity = Spawner:Create({
+	Entity = {
+		Name = "Ripper Entity",
+		Asset = "18838486818",
+		HeightOffset = 2
+	},
+	Lights = {
+		Flicker = {
+			Enabled = true,
+			Duration = 1
+		},
+		Shatter = true,
+		Repair = false
+	},
+	Earthquake = {
+		Enabled = true
+	},
+	Spawned = {
+		ChangeColorWhenSpawn = false, 
+		Rainbow = false,              
+		Color = Color3.fromRGB(0, 85, 255)
+	},
+	CameraShake = {
+		Enabled = true,
+		Range = 100,
+		Values = {1.5, 40, 0.1, 1}
+	},
+
+	Movement = {
+		Speed = 180,
+		SpeedFast = 1700,                  
+		MoveFastNotEnter = false,            
+		Delay = 2,
+		Reversed = true, -- Đã cập nhật thành True                 
+		EndWhenEnterLatestRoom = false,   
+		EndDelay = 0,
+
+		ReboundMoving = false,          
+		TweenSecond = 1.5,            
+
+		ReboundMoveStyle = false,      
+		ReboundStyleTimes = 3,         
+		ReboundStyleSound = "rbxassetid://130994177179386", 
+		ReboundStyleVolume = 5        
+	},
+
+	Jumpscare = {
+		Enabled = false,
+		Image1 = "rbxassetid://11253398403", 
+		Image2 = "rbxassetid://12293509957",
+		Sound1 = "rbxassetid://0", 
+		Sound2 = "rbxassetid://109582246349306", 
+		Tease = {
+			[1] = true,
+			Min = 1,
+			Max = 1
+		},
+		Flashing = {
+			[1] = true,
+			[2] = Color3.fromRGB(255, 255, 255)
+		},
+		Shake = true
+	},
+	Rebounding = {
+		Enabled = false,
+		Type = "Ambush",
+		Min = 1,
+		Max = 1,
+		Delay = 2
+	},
+	Damage = {
+		Enabled = true,
+		KillOnMove = false,            
+		Range = 40,
+		Amount = 125,
+		IgnoreHiding = false,
+
+		JumpscareRipper = {
+			Enabled = true,
+			TargetPartName = "Ripe",
+			AttachmentName = "ripe",
+			ParticleName = "ParticleEmitter",
+			ParticleTexture = "rbxassetid://12737595583",
+			SoundUrl = "https://github.com/eoyoustme/back/raw/main/Kill_with_static.mp3",
+			SlamSoundId = "rbxassetid://0",
+			EndSoundId = "rbxassetid://4988621968",
+			Images = {
+				"rbxassetid://8482795900",
+				"rbxassetid://236542974",
+				"rbxassetid://184251462",
+				"rbxassetid://236777652"
+			},
+			FlashDuration = 1.6
+		}
+	},
+	Crucifixion = {
+		Enabled = true,
+		Range = 40,
+		Resist = false,
+		Break = true
+	},
+	Death = {
+		Type = "Guiding",
+		Hints = {
+			"You died to who you call Ripper...",
+			"When the lights turn red and screen shakes, it is approaching rapidly...",
+			"Hide in a closet or under a bed immediately to stay safe...",
+			"Do not stay in the open when you hear its roar..."
+		},
+		Cause = "Mulit Ripper"
+	}
+})
+
+---====== SỰ KIỆN PHÁ ĐỒ KHI QUA CỬA ======---
+local destroyedRooms = {}
+
+entity:SetCallback("OnEnterRoom", function(room: Model, firstTime: boolean)
+	doorSound1:Play()
+	doorSound2:Play()
+	doorSound3:Play()
+
+	if room and not destroyedRooms[room] then
+		destroyedRooms[room] = true
+
+		task.spawn(function()
+			task.wait(0.05)
+
+			local breakSound = Instance.new("Sound")
+			breakSound.SoundId = "rbxassetid://9114223171"
+			breakSound.Volume = 2.5
+			breakSound.Parent = room:FindFirstChild("Assets") or room
+			breakSound:Play()
+			breakSound.Ended:Connect(function() breakSound:Destroy() end)
+
+			local assetContainer = room:FindFirstChild("Assets") or room
+			local breakSounds = {
+				"rbxassetid://9125992545",
+				"rbxassetid://4004052860",
+				"rbxassetid://7142857558",
+				"rbxassetid://7142843615",
+				"rbxassetid://7142857558",
+				"rbxassetid://2612674531",
+				"rbxassetid://2174790942"
+			}
+			local blacklist = {"wardrobe", "bed", "rug", "key", "drawer", "book", "breaker", "table", "desk", "gold", "dresser"}
+
+			for _, item in pairs(assetContainer:GetChildren()) do
+				if item:IsA("Model") and item.Name ~= "Door" and item.Name ~= "HidingSpots" then
+
+					local isBlacklisted = false
+					local itemNameLower = string.lower(item.Name)
+					for _, word in ipairs(blacklist) do
+						if string.find(itemNameLower, word) then
+							isBlacklisted = true
+							break
+						end
+					end
+
+					if not isBlacklisted then
+						local primary = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")
+
+						if primary then
+							task.spawn(function()
+								for _, v in ipairs(item:GetDescendants()) do
+									if v:IsA("BasePart") then
+										local lowerName = string.lower(v.Name)
+
+										if not string.find(lowerName, "floor") and not string.find(lowerName, "hitbox") then
+											task.wait(math.random(1, 4) / 100)
+
+											local randomSoundId = breakSounds[math.random(1, #breakSounds)]
+
+											local s = Instance.new("Sound")
+											s.SoundId = randomSoundId
+											s.Volume = math.random(12, 24) / 10 
+											s.PlaybackSpeed = math.random(85, 115) / 100
+											s.RollOffMaxDistance = 100
+											s.Parent = v
+											s:Play()
+
+											s.Ended:Connect(function() s:Destroy() end)
+
+											v.Anchored = false
+											v.CanCollide = true 
+											v.CustomPhysicalProperties = PhysicalProperties.new(0.01, 0.01, 0.5, 1, 1)
+
+											pcall(function()
+												if v:CanSetNetworkOwnership() then
+													v:SetNetworkOwner(LocalPlayer)
+												end
+											end)
+
+											v.CFrame = v.CFrame + Vector3.new(0, 0.05, 0)
+										end
+									end
+								end
+							end)
+
+							primary.Anchored = true
+							task.wait()
+							primary.Anchored = false
+
+							primary.AssemblyLinearVelocity = Vector3.new(
+								math.random(-60, 60),
+								math.random(20, 50),
+								math.random(-60, 60)
+							)
+
+							primary.AssemblyAngularVelocity = Vector3.new(
+								math.random(-25, 25),
+								math.random(-25, 25),
+								math.random(-25, 25)
+							)
+						end
+					end
+				end
+			end
+		end)
+	end
+end)
+
+---====== HIỆU ỨNG MÀN HÌNH ĐỎ DẦN RỒI MỜ KHI BỊ CRUCIFIX ======---
+local isCrucified = false
+
+local function HandleCrucifixEffect()
+	if isCrucified then return end
+	isCrucified = true
+
+	isShaking = false
+
+	local redTween = TweenService:Create(redFrame, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+		BackgroundTransparency = 0.1,
+		BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+	})
+	
+	local lightTween = TweenService:Create(playerLight, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+		Brightness = 8,
+		Range = 150
+	})
+
+	redTween:Play()
+	lightTween:Play()
+
+	task.delay(2, function()
+		local fadeOverlay = TweenService:Create(redFrame, TweenInfo.new(3.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+			BackgroundTransparency = 1
+		})
+		
+		local fadeLight = TweenService:Create(playerLight, TweenInfo.new(3.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+			Brightness = 0,
+			Range = 0
+		})
+
+		fadeOverlay:Play()
+		fadeLight:Play()
+
+		fadeLight.Completed:Connect(function()
+			playerLight.Enabled = false
+			playerLight.Parent = nil
+			if redGui and redGui.Parent then 
+				redGui:Destroy() 
+			end
+		end)
+	end)
+end
+
+workspace.ChildAdded:Connect(function(child)
+	if string.find(child.Name, "Crucifix") or string.find(child.Name, "Crucifixion") then
+		HandleCrucifixEffect()
+	end
+end)
+
+---====== Callback Despawn ======---
+entity:SetCallback("OnDespawned", function()
+	if not isCrucified then
+		isShaking = false
+
+		local fadeOverlay = TweenService:Create(redFrame, TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1})
+		fadeOverlay:Play()
+		
+		local lightFadeOut = TweenService:Create(playerLight, TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Brightness = 0, Range = 0})
+		lightFadeOut:Play()
+		
+		lightFadeOut.Completed:Connect(function()
+			playerLight.Enabled = false
+			playerLight.Parent = nil
+			if redGui and redGui.Parent then redGui:Destroy() end
+		end)
+
+		task.delay(3, function()
+			if introSound then introSound:Stop() end
+			if doorSound1 then doorSound1:Stop() end
+			if doorSound2 then doorSound2:Stop() end
+			if doorSound3 then doorSound3:Stop() end
+		end)
+	end
+end)
+
+---====== Run Entity Immediately (Reversed) ======---
+isShaking = true
+introSound:Play()
+
+local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+playerLight.Parent = root
+playerLight.Enabled = true
+
+TweenService:Create(redFrame, TweenInfo.new(3), {BackgroundTransparency = 0.3}):Play()
+TweenService:Create(playerLight, TweenInfo.new(3), {Brightness = 3}):Play()
+
+introSound.Ended:Connect(function()
+	entity:Run(false) -- Đã sửa thành False để chạy Reversed sau khi kết thúc Intro sound
+end)
+
