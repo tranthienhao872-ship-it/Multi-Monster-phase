@@ -1,0 +1,1583 @@
+--========================================================--
+--          YOU_BEEN_HACKED ERROR SYSTEM                 --
+--             DELTA MOBILE + PC VERSION                 --
+--========================================================--
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+local RNG = Random.new()
+
+--========================================================--
+-- SETTINGS
+--========================================================--
+
+local SPAWN_INTERVAL = 3
+
+local MIN_TIME = 3
+local MAX_TIME = 5
+
+local MIN_DAMAGE = 29
+local MAX_DAMAGE = 89
+
+-- Cửa sổ xuất hiện
+local SPAWN_SOUND_ID = "rbxassetid://12221944"
+
+-- Bấm X
+local CLOSE_SOUND_ID = "rbxassetid://12221967"
+
+-- Hết thời gian
+local TIMEOUT_SOUND_ID = "rbxassetid://12221984"
+
+--========================================================--
+-- CLEAN OLD GUI
+--========================================================--
+
+pcall(function()
+
+    local Old =
+        PlayerGui:FindFirstChild(
+            "FakeHackErrorGUI"
+        )
+
+    if Old then
+        Old:Destroy()
+    end
+
+end)
+
+--========================================================--
+-- MAIN GUI
+--========================================================--
+
+local ScreenGui =
+    Instance.new("ScreenGui")
+
+ScreenGui.Name =
+    "FakeHackErrorGUI"
+
+ScreenGui.ResetOnSpawn = false
+
+ScreenGui.IgnoreGuiInset = true
+
+ScreenGui.ZIndexBehavior =
+    Enum.ZIndexBehavior.Sibling
+
+ScreenGui.Parent =
+    PlayerGui
+
+--========================================================--
+-- CAMERA
+--========================================================--
+
+local Camera =
+    workspace.CurrentCamera
+
+local function GetScreenSize()
+
+    if Camera then
+        return Camera.ViewportSize
+    end
+
+    return Vector2.new(
+        1280,
+        720
+    )
+
+end
+
+local function IsMobile()
+
+    local Size =
+        GetScreenSize()
+
+    return Size.X < 800
+        or Size.Y < 600
+
+end
+
+--========================================================--
+-- SOUND
+--========================================================--
+
+local function PlaySound(SoundId)
+
+    local Sound =
+        Instance.new("Sound")
+
+    Sound.SoundId =
+        SoundId
+
+    Sound.Volume = 1
+
+    Sound.Parent =
+        SoundService
+
+    Sound:Play()
+
+    Sound.Ended:Connect(function()
+
+        if Sound then
+            Sound:Destroy()
+        end
+
+    end)
+
+    task.delay(
+        10,
+        function()
+
+            if Sound
+                and Sound.Parent then
+
+                Sound:Destroy()
+
+            end
+
+        end
+    )
+
+end
+
+--========================================================--
+-- BACKGROUND
+--========================================================--
+
+local Background =
+    Instance.new("Frame")
+
+Background.Name =
+    "GlitchBackground"
+
+Background.Size =
+    UDim2.fromScale(
+        1,
+        1
+    )
+
+Background.Position =
+    UDim2.fromScale(
+        0,
+        0
+    )
+
+Background.BackgroundColor3 =
+    Color3.fromRGB(
+        45,
+        0,
+        0
+    )
+
+Background.BackgroundTransparency =
+    0.95
+
+Background.BorderSizePixel = 0
+
+Background.ZIndex = 1
+
+Background.Parent =
+    ScreenGui
+
+--========================================================--
+-- ERROR TEXTS
+--========================================================--
+
+local ErrorTexts = {
+
+    "YOU_BEEN_HACKED!?!01",
+    "YOU_BEEN_HACKED!?!02",
+    "YOU_BEEN_HACKED!?!03",
+    "YOU_BEEN_HACKED!?!04",
+    "YOU_BEEN_HACKED!?!05",
+
+    "SYSTEM_ERROR_404",
+    "SYSTEM_FAILURE!?",
+    "CRITICAL_ERROR_001",
+    "ACCESS_DENIED!!!",
+
+    "FILE_CORRUPTED.exe",
+    "MEMORY_ERROR_0x01",
+    "UNKNOWN_PROCESS",
+    "CONNECTION_LOST...",
+
+    "ERROR::NO_PERMISSION",
+    "VIRUS_DETECTED?!",
+    "ERROR_0xDEAD",
+    "USER_NOT_FOUND",
+
+    "KERNEL_ERROR",
+    "!!! WARNING !!!",
+    "DATA_CORRUPTED",
+    "REBOOT_FAILED",
+
+    "SYSTEM_LOCKED",
+    "UNKNOWN_EXCEPTION",
+    "PROCESS_TERMINATED",
+    "ACCESS_VIOLATION",
+
+    "FATAL_ERROR",
+    "SYSTEM_CORRUPTED",
+    "SECURITY_FAILURE",
+    "UNKNOWN_DEVICE"
+
+}
+
+local SmallTexts = {
+
+    "DO NOT CLOSE",
+    "SYSTEM FAILURE",
+    "UNKNOWN SOURCE",
+    "RETRY FAILED",
+
+    "ACCESS BLOCKED",
+    "PROCESS ERROR",
+    "CONNECTION FAILED",
+    "MEMORY CORRUPTION",
+
+    "SECURITY ALERT",
+    "INVALID REQUEST",
+    "FATAL_EXCEPTION",
+    "SYSTEM UNSTABLE"
+
+}
+
+--========================================================--
+-- RANDOM
+--========================================================--
+
+local function RandomInt(
+    Min,
+    Max
+)
+
+    return RNG:NextInteger(
+        Min,
+        Max
+    )
+
+end
+
+local function RandomFloat(
+    Min,
+    Max
+)
+
+    return RNG:NextNumber(
+        Min,
+        Max
+    )
+
+end
+
+local function RandomError()
+
+    return ErrorTexts[
+        RandomInt(
+            1,
+            #ErrorTexts
+        )
+    ]
+
+end
+
+local function RandomSmallError()
+
+    return SmallTexts[
+        RandomInt(
+            1,
+            #SmallTexts
+        )
+    ]
+
+end
+
+local function RandomWindowColor()
+
+    local Colors = {
+
+        Color3.fromRGB(
+            50,
+            0,
+            0
+        ),
+
+        Color3.fromRGB(
+            65,
+            0,
+            0
+        ),
+
+        Color3.fromRGB(
+            80,
+            0,
+            0
+        ),
+
+        Color3.fromRGB(
+            95,
+            0,
+            0
+        ),
+
+        Color3.fromRGB(
+            110,
+            0,
+            0
+        )
+
+    }
+
+    return Colors[
+        RandomInt(
+            1,
+            #Colors
+        )
+    ]
+
+end
+
+--========================================================--
+-- DAMAGE PLAYER
+--========================================================--
+
+local function DamagePlayer()
+
+    local Character =
+        Player.Character
+
+    if not Character then
+        return
+    end
+
+    local Humanoid =
+        Character:FindFirstChildOfClass(
+            "Humanoid"
+        )
+
+    if not Humanoid then
+        return
+    end
+
+    if Humanoid.Health <= 0 then
+        return
+    end
+
+    local Damage =
+        RandomInt(
+            MIN_DAMAGE,
+            MAX_DAMAGE
+        )
+
+    Humanoid.Health =
+        math.max(
+            0,
+            Humanoid.Health - Damage
+        )
+
+    print(
+        "[ERROR GUI] TIMEOUT DAMAGE:",
+        Damage
+    )
+
+end
+
+--========================================================--
+-- WINDOW COUNTER
+--========================================================--
+
+local WindowCount = 0
+
+--========================================================--
+-- CREATE ERROR WINDOW
+--========================================================--
+
+local function CreateErrorWindow()
+
+    if not ScreenGui.Parent then
+        return
+    end
+
+    WindowCount += 1
+
+    local ScreenSize =
+        GetScreenSize()
+
+    local Mobile =
+        IsMobile()
+
+    --====================================================--
+    -- WINDOW SIZE
+    --====================================================--
+
+    local Width
+    local Height
+
+    if Mobile then
+
+        Width =
+            RandomInt(
+                190,
+                270
+            )
+
+        Height =
+            RandomInt(
+                130,
+                170
+            )
+
+    else
+
+        Width =
+            RandomInt(
+                240,
+                370
+            )
+
+        Height =
+            RandomInt(
+                145,
+                190
+            )
+
+    end
+
+    Width =
+        math.min(
+            Width,
+            math.max(
+                170,
+                math.floor(
+                    ScreenSize.X - 20
+                )
+            )
+        )
+
+    Height =
+        math.min(
+            Height,
+            math.max(
+                120,
+                math.floor(
+                    ScreenSize.Y - 30
+                )
+            )
+        )
+
+    --====================================================--
+    -- RANDOM POSITION
+    --====================================================--
+
+    local MaxX =
+        math.max(
+            10,
+            math.floor(
+                ScreenSize.X -
+                Width -
+                10
+            )
+        )
+
+    local MaxY =
+        math.max(
+            10,
+            math.floor(
+                ScreenSize.Y -
+                Height -
+                10
+            )
+        )
+
+    local X =
+        RandomInt(
+            10,
+            MaxX
+        )
+
+    local Y =
+        RandomInt(
+            10,
+            MaxY
+        )
+
+    --====================================================--
+    -- RANDOM TIMER
+    --====================================================--
+
+    local TimeLimit =
+        RandomFloat(
+            MIN_TIME,
+            MAX_TIME
+        )
+
+    --====================================================--
+    -- WINDOW
+    --====================================================--
+
+    local Window =
+        Instance.new("Frame")
+
+    Window.Name =
+        "ErrorWindow_" ..
+        WindowCount
+
+    Window.Size =
+        UDim2.fromOffset(
+            0,
+            0
+        )
+
+    Window.Position =
+        UDim2.fromOffset(
+            X,
+            Y
+        )
+
+    Window.BackgroundColor3 =
+        RandomWindowColor()
+
+    Window.BackgroundTransparency = 0
+
+    Window.BorderSizePixel = 2
+
+    Window.BorderColor3 =
+        Color3.fromRGB(
+            255,
+            0,
+            0
+        )
+
+    Window.ZIndex =
+        100 + WindowCount
+
+    Window.Parent =
+        ScreenGui
+
+    --====================================================--
+    -- SPAWN SOUND
+    --====================================================--
+
+    PlaySound(
+        SPAWN_SOUND_ID
+    )
+
+    --====================================================--
+    -- CORNER
+    --====================================================--
+
+    local Corner =
+        Instance.new("UICorner")
+
+    Corner.CornerRadius =
+        UDim.new(
+            0,
+            3
+        )
+
+    Corner.Parent =
+        Window
+
+    --====================================================--
+    -- TITLE BAR
+    --====================================================--
+
+    local TitleBar =
+        Instance.new("Frame")
+
+    TitleBar.Name =
+        "TitleBar"
+
+    TitleBar.Size =
+        UDim2.new(
+            1,
+            0,
+            0,
+            27
+        )
+
+    TitleBar.Position =
+        UDim2.fromOffset(
+            0,
+            0
+        )
+
+    TitleBar.BackgroundColor3 =
+        Color3.fromRGB(
+            125,
+            0,
+            0
+        )
+
+    TitleBar.BorderSizePixel = 0
+
+    TitleBar.ZIndex =
+        Window.ZIndex + 1
+
+    TitleBar.Parent =
+        Window
+
+    --====================================================--
+    -- TITLE
+    --====================================================--
+
+    local Title =
+        Instance.new("TextLabel")
+
+    Title.Name =
+        "Title"
+
+    Title.Size =
+        UDim2.new(
+            1,
+            -35,
+            1,
+            0
+        )
+
+    Title.Position =
+        UDim2.fromOffset(
+            6,
+            0
+        )
+
+    Title.BackgroundTransparency = 1
+
+    Title.Text =
+        "!! SYSTEM ERROR !!"
+
+    Title.TextColor3 =
+        Color3.fromRGB(
+            255,
+            255,
+            255
+        )
+
+    Title.TextSize =
+        Mobile
+        and 11
+        or 14
+
+    Title.Font =
+        Enum.Font.Code
+
+    Title.TextXAlignment =
+        Enum.TextXAlignment.Left
+
+    Title.ZIndex =
+        Window.ZIndex + 2
+
+    Title.Parent =
+        TitleBar
+
+    --====================================================--
+    -- X BUTTON
+    --====================================================--
+
+    local Close =
+        Instance.new("TextButton")
+
+    Close.Name =
+        "Close"
+
+    Close.Size =
+        UDim2.fromOffset(
+            27,
+            27
+        )
+
+    Close.Position =
+        UDim2.new(
+            1,
+            -27,
+            0,
+            0
+        )
+
+    Close.BackgroundColor3 =
+        Color3.fromRGB(
+            65,
+            0,
+            0
+        )
+
+    Close.BorderSizePixel = 1
+
+    Close.BorderColor3 =
+        Color3.fromRGB(
+            255,
+            0,
+            0
+        )
+
+    Close.Text = "X"
+
+    Close.TextColor3 =
+        Color3.fromRGB(
+            255,
+            255,
+            255
+        )
+
+    Close.TextSize =
+        Mobile
+        and 14
+        or 17
+
+    Close.Font =
+        Enum.Font.Code
+
+    Close.AutoButtonColor = false
+
+    Close.ZIndex =
+        Window.ZIndex + 5
+
+    Close.Parent =
+        TitleBar
+
+    --====================================================--
+    -- X HOVER
+    --====================================================--
+
+    Close.MouseEnter:Connect(function()
+
+        Close.BackgroundColor3 =
+            Color3.fromRGB(
+                190,
+                0,
+                0
+            )
+
+    end)
+
+   Close.MouseLeave:Connect(function()
+
+        Close.BackgroundColor3 =
+            Color3.fromRGB(
+                65,
+                0,
+                0
+            )
+
+    end)
+
+    --====================================================--
+    -- MAIN ERROR
+    --====================================================--
+
+    local MainText =
+        Instance.new("TextLabel")
+
+    MainText.Name =
+        "MainError"
+
+    MainText.Size =
+        UDim2.new(
+            1,
+            -16,
+            0,
+            40
+        )
+
+    MainText.Position =
+        UDim2.fromOffset(
+            8,
+            34
+        )
+
+    MainText.BackgroundTransparency = 1
+
+    MainText.Text =
+        RandomError()
+
+    MainText.TextColor3 =
+        Color3.fromRGB(
+            255,
+            55,
+            55
+        )
+
+    MainText.TextStrokeTransparency =
+        0.45
+
+    MainText.TextSize =
+        Mobile
+        and 14
+        or RandomInt(
+            16,
+            22
+        )
+
+    MainText.Font =
+        Enum.Font.Code
+
+    MainText.TextWrapped = true
+
+    MainText.ZIndex =
+        Window.ZIndex + 2
+
+    MainText.Parent =
+        Window
+
+    --====================================================--
+    -- SMALL ERROR
+    --====================================================--
+
+    local SmallText =
+        Instance.new("TextLabel")
+
+    SmallText.Name =
+        "SmallError"
+
+    SmallText.Size =
+        UDim2.new(
+            1,
+            -16,
+            0,
+            22
+        )
+
+    SmallText.Position =
+        UDim2.fromOffset(
+            8,
+            75
+        )
+
+    SmallText.BackgroundTransparency = 1
+
+    SmallText.Text =
+        RandomSmallError()
+
+    SmallText.TextColor3 =
+        Color3.fromRGB(
+            255,
+            180,
+            180
+        )
+
+    SmallText.TextSize =
+        Mobile
+        and 9
+        or 12
+
+    SmallText.Font =
+        Enum.Font.Code
+
+    SmallText.TextWrapped = true
+
+    SmallText.ZIndex =
+        Window.ZIndex + 2
+
+    SmallText.Parent =
+        Window
+
+    --====================================================--
+    -- TIMER LABEL
+    --====================================================--
+
+    local TimerLabel =
+        Instance.new("TextLabel")
+
+    TimerLabel.Name =
+        "Timer"
+
+    TimerLabel.Size =
+        UDim2.new(
+            1,
+            -16,
+            0,
+            20
+        )
+
+    TimerLabel.Position =
+        UDim2.new(
+            0,
+            8,
+            1,
+            -47
+        )
+
+    TimerLabel.BackgroundTransparency = 1
+
+    TimerLabel.Text =
+        string.format(
+            "TIME: %.1f",
+            TimeLimit
+        )
+
+    TimerLabel.TextColor3 =
+        Color3.fromRGB(
+            255,
+            255,
+            255
+        )
+
+    TimerLabel.TextSize =
+        Mobile
+        and 10
+        or 12
+
+    TimerLabel.Font =
+        Enum.Font.Code
+
+    TimerLabel.TextXAlignment =
+        Enum.TextXAlignment.Left
+
+    TimerLabel.ZIndex =
+        Window.ZIndex + 3
+
+    TimerLabel.Parent =
+        Window
+
+    --====================================================--
+    -- TIMER BACKGROUND
+    --====================================================--
+
+    local TimerBack =
+        Instance.new("Frame")
+
+    TimerBack.Name =
+        "TimerBack"
+
+    TimerBack.Size =
+        UDim2.new(
+            1,
+            -16,
+            0,
+            6
+        )
+
+    TimerBack.Position =
+        UDim2.new(
+            0,
+            8,
+            1,
+            -14
+        )
+
+    TimerBack.BackgroundColor3 =
+        Color3.fromRGB(
+            25,
+            0,
+            0
+        )
+
+    TimerBack.BorderSizePixel = 1
+
+    TimerBack.BorderColor3 =
+        Color3.fromRGB(
+            120,
+            0,
+            0
+        )
+
+    TimerBack.ZIndex =
+        Window.ZIndex + 2
+
+    TimerBack.Parent =
+        Window
+
+    --====================================================--
+    -- TIMER BAR
+    --====================================================--
+
+    local TimerBar =
+        Instance.new("Frame")
+
+    TimerBar.Name =
+        "TimerBar"
+
+    TimerBar.Size =
+        UDim2.fromScale(
+            1,
+            1
+        )
+
+    TimerBar.Position =
+        UDim2.fromScale(
+            0,
+            0
+        )
+
+    TimerBar.BackgroundColor3 =
+        Color3.fromRGB(
+            255,
+            0,
+            0
+        )
+
+    TimerBar.BorderSizePixel = 0
+
+    TimerBar.ZIndex =
+        Window.ZIndex + 3
+
+    TimerBar.Parent =
+        TimerBack
+
+    --====================================================--
+    -- ERROR LINE
+    --====================================================--
+
+    local Line =
+        Instance.new("Frame")
+
+    Line.Name =
+        "ErrorLine"
+
+    Line.Size =
+        UDim2.new(
+            1,
+            -10,
+            0,
+            1
+        )
+
+    Line.Position =
+        UDim2.fromOffset(
+            5,
+            31
+        )
+
+    Line.BackgroundColor3 =
+        Color3.fromRGB(
+            255,
+            0,
+            0
+        )
+
+    Line.BorderSizePixel = 0
+
+    Line.ZIndex =
+        Window.ZIndex + 2
+
+    Line.Parent =
+        Window
+
+    --====================================================--
+    -- GLITCH BLOCK
+    --====================================================--
+
+    local GlitchBlock =
+        Instance.new("Frame")
+
+    GlitchBlock.Name =
+        "GlitchBlock"
+
+    GlitchBlock.Size =
+        UDim2.new(
+            1,
+            -RandomInt(
+                20,
+                60
+            ),
+            0,
+            2
+        )
+
+    GlitchBlock.Position =
+        UDim2.fromOffset(
+            RandomInt(
+                5,
+                20
+            ),
+            RandomInt(
+                35,
+                math.max(
+                    36,
+                    Height - 20
+                )
+            )
+        )
+
+    GlitchBlock.BackgroundColor3 =
+        Color3.fromRGB(
+            255,
+            0,
+            0
+        )
+
+    GlitchBlock.BackgroundTransparency =
+        0.35
+
+    GlitchBlock.BorderSizePixel = 0
+
+    GlitchBlock.ZIndex =
+        Window.ZIndex + 3
+
+    GlitchBlock.Parent =
+        Window
+
+    --====================================================--
+    -- OPEN ANIMATION
+    --====================================================--
+
+    TweenService:Create(
+
+        Window,
+
+        TweenInfo.new(
+            0.14,
+            Enum.EasingStyle.Back,
+            Enum.EasingDirection.Out
+        ),
+
+        {
+            Size =
+                UDim2.fromOffset(
+                    Width,
+                    Height
+                )
+        }
+
+    ):Play()
+
+    --====================================================--
+    -- STATE
+    --====================================================--
+
+    local Closed = false
+
+    --====================================================--
+    -- CLOSE WINDOW
+    --====================================================--
+
+    local function CloseWindow(
+        IsTimeout
+    )
+
+        if Closed then
+            return
+        end
+
+        Closed = true
+
+        local CloseTween =
+            TweenService:Create(
+
+                Window,
+
+                TweenInfo.new(
+                    0.10,
+                    Enum.EasingStyle.Quad,
+                    Enum.EasingDirection.In
+                ),
+
+                {
+
+                    Size =
+                        UDim2.fromOffset(
+                            0,
+                            0
+                        ),
+
+                    BackgroundTransparency = 1
+
+                }
+
+            )
+
+        CloseTween:Play()
+
+        task.spawn(function()
+
+            CloseTween.Completed:Wait()
+
+            if Window then
+                Window:Destroy()
+            end
+
+        end)
+
+    end
+
+       --====================================================--
+    -- X BUTTON
+    --====================================================--
+
+    Close.MouseButton1Click:Connect(function()
+
+        if Closed then
+            return
+        end
+
+        -- Sound bấm X
+        PlaySound(
+            CLOSE_SOUND_ID
+        )
+
+        CloseWindow(false)
+
+    end)
+
+    --====================================================--
+    -- TIMER
+    --====================================================--
+
+    task.spawn(function()
+
+        local StartTime =
+            os.clock()
+
+        while Window.Parent
+            and not Closed do
+
+            local Elapsed =
+                os.clock() -
+                StartTime
+
+            local Remaining =
+                TimeLimit -
+                Elapsed
+
+            if Remaining <= 0 then
+                break
+            end
+
+            local Percent =
+                math.clamp(
+                    Remaining /
+                    TimeLimit,
+                    0,
+                    1
+                )
+
+            TimerBar.Size =
+                UDim2.new(
+                    Percent,
+                    0,
+                    1,
+                    0
+                )
+
+            TimerLabel.Text =
+                string.format(
+                    "TIME: %.1f",
+                    Remaining
+                )
+
+            --================================================--
+            -- TIMER COLOR
+            --================================================--
+
+            if Percent <= 0.25 then
+
+                TimerBar.BackgroundColor3 =
+                    Color3.fromRGB(
+                        255,
+                        20,
+                        20
+                    )
+
+                TimerLabel.TextColor3 =
+                    Color3.fromRGB(
+                        255,
+                        70,
+                        70
+                    )
+
+            elseif Percent <= 0.5 then
+
+                TimerBar.BackgroundColor3 =
+                    Color3.fromRGB(
+                        190,
+                        0,
+                        0
+                    )
+
+            else
+
+                TimerBar.BackgroundColor3 =
+                    Color3.fromRGB(
+                        255,
+                        0,
+                        0
+                    )
+
+            end
+
+            task.wait(
+                0.03
+            )
+
+        end
+
+        --================================================--
+        -- TIMEOUT
+        --================================================--
+
+        if Window.Parent
+            and not Closed then
+
+            TimerLabel.Text =
+                "TIME: 0.0"
+
+            -- Âm thanh hết thời gian
+            PlaySound(
+                TIMEOUT_SOUND_ID
+            )
+
+            -- Mất 29 - 89 HP
+            DamagePlayer()
+
+            -- Đóng cửa sổ
+            CloseWindow(true)
+
+        end
+
+    end)
+
+    --====================================================--
+    -- GLITCH LOOP
+    --====================================================--
+
+    task.spawn(function()
+
+        while Window.Parent
+            and not Closed do
+
+            task.wait(
+                RandomFloat(
+                    0.08,
+                    0.20
+                )
+            )
+
+            if not Window.Parent
+                or Closed then
+                break
+            end
+
+            local OldPosition =
+                Window.Position
+
+            Window.Position =
+                UDim2.fromOffset(
+
+                    X + RandomInt(
+                        -4,
+                        4
+                    ),
+
+                    Y + RandomInt(
+                        -3,
+                        3
+                    )
+
+                )
+
+            MainText.TextColor3 =
+                Color3.fromRGB(
+
+                    255,
+
+                    RandomInt(
+                        20,
+                        100
+                    ),
+
+                    RandomInt(
+                        20,
+                        100
+                    )
+
+                )
+
+            GlitchBlock.Position =
+                UDim2.fromOffset(
+
+                    RandomInt(
+                        5,
+                        math.max(
+                            6,
+                            Width - 40
+                        )
+                    ),
+
+                    RandomInt(
+                        35,
+                        math.max(
+                            36,
+                            Height - 20
+                        )
+                    )
+
+                )
+
+            task.wait(
+                0.035
+            )
+
+            if Window.Parent
+                and not Closed then
+
+                Window.Position =
+                    OldPosition
+
+            end
+
+        end
+
+    end)
+
+end
+
+--========================================================--
+-- CREATE WAVE
+--========================================================--
+
+local function CreateWave()
+
+    if not ScreenGui.Parent then
+        return
+    end
+
+    local Mobile =
+        IsMobile()
+
+    local Amount
+
+    if Mobile then
+
+        Amount =
+            RandomInt(
+                4,
+                7
+            )
+
+    else
+
+        Amount =
+            RandomInt(
+                6,
+                11
+            )
+
+    end
+
+    for i = 1, Amount do
+
+        if not ScreenGui.Parent then
+            break
+        end
+
+        CreateErrorWindow()
+
+        task.wait(
+            RandomFloat(
+                0.05,
+                0.15
+            )
+        )
+
+    end
+
+end
+
+--========================================================--
+-- FIRST WAVE
+--========================================================--
+
+task.spawn(function()
+
+    task.wait(
+        0.2
+    )
+
+    CreateWave()
+
+end)
+
+--========================================================--
+-- NEW WAVE EVERY 3 SECONDS
+--========================================================--
+
+task.spawn(function()
+
+    while ScreenGui.Parent do
+
+        task.wait(
+            SPAWN_INTERVAL
+        )
+
+        if not ScreenGui.Parent then
+            break
+        end
+
+        CreateWave()
+
+    end
+
+end)
+
+--========================================================--
+-- GLOBAL GLITCH
+--========================================================--
+
+task.spawn(function()
+
+    while ScreenGui.Parent do
+
+        task.wait(
+            RandomFloat(
+                0.7,
+                1.5
+            )
+        )
+
+        if not ScreenGui.Parent then
+            break
+        end
+
+        Background.BackgroundTransparency =
+            RandomFloat(
+                0.88,
+                0.94
+            )
+
+        task.wait(
+            0.04
+        )
+
+        if Background.Parent then
+
+            TweenService:Create(
+
+                Background,
+
+                TweenInfo.new(
+                    0.15
+                ),
+
+                {
+                    BackgroundTransparency =
+                        0.96
+                }
+
+            ):Play()
+
+        end
+
+    end
+
+end)
+
+--========================================================--
+-- LOADED
+--========================================================--
+
+print("==========================================")
+print(" YOU_BEEN_HACKED ERROR SYSTEM")
+print("==========================================")
+print(" MOBILE + PC       : ON")
+print(" WAVE              : EVERY 3 SECONDS")
+print(" WINDOWS / WAVE    : RANDOM")
+print(" TIMER             : 3 - 5 SECONDS")
+print(" TIMEOUT DAMAGE    : 29 - 89 HP")
+print(" SPAWN SOUND       : 12221944")
+print(" CLOSE SOUND       : 12221967")
+print(" TIMEOUT SOUND     : 12221984")
+print(" INDIVIDUAL X      : ON")
+print(" GLOBAL X          : OFF")
+print("==========================================")
