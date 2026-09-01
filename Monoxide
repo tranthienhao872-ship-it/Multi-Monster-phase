@@ -1,0 +1,188 @@
+--========================================================--
+-- MONOXIDE RETAKE - 0.67% ROOM RANDOM SYSTEM
+-- DELTA EXECUTOR
+--========================================================--
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+local Player = Players.LocalPlayer
+
+--========================================================--
+-- SETTINGS
+--========================================================--
+
+local CHANCE = 0.0067 -- 0.67%
+
+local SCRIPT_URL =
+	"https://raw.githubusercontent.com/tranthienhao872-ship-it/Hardcore-Retake/refs/heads/main/Monoxide%20Retake"
+
+-- Không kích hoạt ngay khi chạy script
+local INITIAL_CHECK = false
+
+-- Monoxide chỉ được kích hoạt 1 lần
+local USED = false
+
+-- Phòng hiện tại
+local LAST_ROOM = nil
+
+--========================================================--
+-- LOAD SCRIPT
+--========================================================--
+
+local function LoadMonoxide()
+	if USED then
+		return
+	end
+
+	USED = true
+
+	print("[MONOXIDE] 🎲 0.67% HIT!")
+
+	task.spawn(function()
+
+		local success, err = pcall(function()
+
+			local source = game:HttpGet(SCRIPT_URL)
+
+			local func = loadstring(source)
+
+			if not func then
+				error("loadstring failed")
+			end
+
+			func()
+
+		end)
+
+		if success then
+			print("[MONOXIDE] ✅ Retake loaded!")
+		else
+			warn("[MONOXIDE] ❌ Load error:", err)
+		end
+
+	end)
+end
+
+--========================================================--
+-- RANDOM
+--========================================================--
+
+local function RollRoom(RoomNumber)
+
+	if USED then
+		return
+	end
+
+	local roll = math.random()
+
+	print(
+		"[MONOXIDE] Room:",
+		RoomNumber,
+		"| Roll:",
+		roll
+	)
+
+	if roll <= CHANCE then
+		LoadMonoxide()
+	else
+		print("[MONOXIDE] ❌ Miss")
+	end
+
+end
+
+--========================================================--
+-- FIND CURRENT ROOM
+--========================================================--
+
+local CurrentRooms = Workspace:WaitForChild("CurrentRooms")
+
+--========================================================--
+-- NEW ROOM DETECTION
+--========================================================--
+
+CurrentRooms.ChildAdded:Connect(function(Room)
+
+	-- Chờ room load hoàn chỉnh
+	task.wait(0.15)
+
+	-- Không xử lý lại cùng room
+	if LAST_ROOM == Room then
+		return
+	end
+
+	LAST_ROOM = Room
+
+	-- Lấy số phòng
+	local RoomNumber = tonumber(Room.Name)
+
+	-- Chỉ roll nếu tên room là số
+	if not RoomNumber then
+		return
+	end
+
+	print("[ROOM] Entered:", RoomNumber)
+
+	-- Roll khi vào phòng mới
+	RollRoom(RoomNumber)
+
+end)
+
+--========================================================--
+-- INITIAL ROOM
+--========================================================--
+
+-- Tuyệt đối không roll phòng đầu tiên
+task.spawn(function()
+
+	local Current = CurrentRooms:GetChildren()
+
+	local HighestRoom = nil
+	local HighestNumber = -math.huge
+
+	for _, Room in ipairs(Current) do
+
+		local Number = tonumber(Room.Name)
+
+		if Number and Number > HighestNumber then
+			HighestNumber = Number
+			HighestRoom = Room
+		end
+
+	end
+
+	if HighestRoom then
+		LAST_ROOM = HighestRoom
+
+		print(
+			"[MONOXIDE] Initial room:",
+			HighestNumber,
+			"| Random: OFF"
+		)
+	end
+
+end)
+
+--========================================================--
+-- RANDOM SEED
+--========================================================--
+
+math.randomseed(
+	math.floor(os.clock() * 1000000)
+		+ math.floor(tick() % 1000000)
+)
+
+--========================================================--
+-- STATUS
+--========================================================--
+
+print("==========================================")
+print("     MONOXIDE RETAKE RANDOM SYSTEM")
+print("==========================================")
+print("Chance       : 0.67%")
+print("Per room     : YES")
+print("Initial roll : OFF")
+print("Duplicate    : OFF")
+print("Executor     : Delta")
+print("Status       : READY")
+print("==========================================")
