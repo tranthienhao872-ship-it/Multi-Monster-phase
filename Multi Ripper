@@ -81,7 +81,7 @@ end)
 local entity = Spawner:Create({
 	Entity = {
 		Name = "Ripper Entity",
-		Asset = "18838486818",
+		Asset = "15094328656",
 		HeightOffset = 2
 	},
 	Lights = {
