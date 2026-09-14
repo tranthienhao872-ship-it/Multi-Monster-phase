@@ -1,394 +1,851 @@
----====== Services & Setup ======---
+--========================================================--
+--                 RIPPER ONE TIME SYSTEM                --
+--              OgHungerNewSpawner Version               --
+--========================================================--
+
+getgenv().Ripper29Loaded = nil
+
+--========================================================--
+-- SERVICES
+--========================================================--
+
 local TweenService = game:GetService("TweenService")
 local SoundService = game:GetService("SoundService")
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
 
-getgenv().OgHungerNewSpawner = nil 
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+--========================================================--
+-- SETTINGS
+--========================================================--
+
+-- NO CHANCE
+-- NO RANDOM
+
+local ripperActive = false
+local achievementEarned = false
+local processedRooms = {}
+
+--========================================================--
+-- ONE TIME CONTROL
+--========================================================--
+
+local hasSpawnedOnce = false
+local waitingForFirstNewRoom = true
+
+--========================================================--
+-- LOAD SPAWNER
+--========================================================--
 
 local success, Spawner = pcall(function()
-	return loadstring(game:HttpGet("https://raw.githubusercontent.com/eoyoustme/Mayhem-Remake/refs/heads/main/OgHungerNewSpawner"))()
+	return loadstring(game:HttpGet(
+		"https://raw.githubusercontent.com/eoyoustme/Mayhem-Remake/refs/heads/main/OgHungerNewSpawner"
+	))()
 end)
 
 if not success or not Spawner then
+	warn("[RIPPER] Cannot load OgHungerNewSpawner")
 	return
 end
 
----====== Setup Overlay & Light ======---
-local pGui = LocalPlayer:WaitForChild("PlayerGui")
-local redGui = Instance.new("ScreenGui")
-redGui.Name = "RipperRedOverlay"
-redGui.IgnoreGuiInset = true
-redGui.ResetOnSpawn = false
-redGui.Parent = pGui
+print("[RIPPER] Spawner loaded")
 
-local redFrame = Instance.new("Frame")
-redFrame.Size = UDim2.new(1, 0, 1, 0)
-redFrame.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
-redFrame.BackgroundTransparency = 1
-redFrame.BorderSizePixel = 0
-redFrame.Parent = redGui
+--========================================================--
+-- SOUNDS
+--========================================================--
 
-local playerLight = Instance.new("PointLight")
-playerLight.Name = "RipperAura"
-playerLight.Color = Color3.fromRGB(150, 0, 0)
-playerLight.Range = 100
-playerLight.Brightness = 0
-playerLight.Enabled = false 
-
----====== Audio Setup ======---
 local introSound = Instance.new("Sound")
-introSound.Name = "RipperIntroSound"
+introSound.Name = "RipperIntro"
 introSound.SoundId = "rbxassetid://12971875415"
 introSound.Volume = 2
 introSound.Parent = SoundService
 
 local doorSound1 = Instance.new("Sound")
-doorSound1.Name = "RipperDoorSound1"
 doorSound1.SoundId = "rbxassetid://9126281820"
 doorSound1.Volume = 3
 doorSound1.Parent = SoundService
 
 local doorSound2 = Instance.new("Sound")
-doorSound2.Name = "RipperDoorSound2"
 doorSound2.SoundId = "rbxassetid://9126281769"
 doorSound2.Volume = 3
 doorSound2.Parent = SoundService
 
 local doorSound3 = Instance.new("Sound")
-doorSound3.Name = "RipperDoorSound3"
 doorSound3.SoundId = "rbxassetid://126631007956569"
 doorSound3.Volume = 3
 doorSound3.Parent = SoundService
 
----====== Camera Shake Logic ======---
-local isShaking = false
-local camera = workspace.CurrentCamera
+--========================================================--
+-- RED SCREEN
+--========================================================--
 
-RunService.RenderStepped:Connect(function()
-	if isShaking and camera then
-		local time = tick()
-		local magnitude = 1.2
-		local xOffset = math.sin(time * 25) * magnitude
-		local yOffset = math.cos(time * 30) * magnitude
-		camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(xOffset), math.rad(yOffset), 0)
+local redGui = Instance.new("ScreenGui")
+redGui.Name = "RipperRedOverlay"
+redGui.IgnoreGuiInset = true
+redGui.ResetOnSpawn = false
+redGui.DisplayOrder = 999
+redGui.Parent = PlayerGui
+
+local redFrame = Instance.new("Frame")
+redFrame.Size = UDim2.new(1, 0, 1, 0)
+redFrame.Position = UDim2.new(0, 0, 0, 0)
+redFrame.BorderSizePixel = 0
+redFrame.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+redFrame.BackgroundTransparency = 1
+redFrame.Parent = redGui
+
+--========================================================--
+-- ROOM OBJECT BREAK
+--========================================================--
+
+local function BreakRoom(room)
+
+	if not room or processedRooms[room] then
+		return
 	end
-end)
 
----====== Create Entity ======---
-local entity = Spawner:Create({
-	Entity = {
-		Name = "Ripper Entity",
-		Asset = "15094328656",
-		HeightOffset = 2
-	},
-	Lights = {
-		Flicker = {
-			Enabled = true,
-			Duration = 1
-		},
-		Shatter = true,
-		Repair = false
-	},
-	Earthquake = {
-		Enabled = true
-	},
-	Spawned = {
-		ChangeColorWhenSpawn = false, 
-		Rainbow = false,              
-		Color = Color3.fromRGB(0, 85, 255)
-	},
-	CameraShake = {
-		Enabled = true,
-		Range = 100,
-		Values = {1.5, 40, 0.1, 1}
-	},
+	processedRooms[room] = true
 
-	Movement = {
-		Speed = 180,
-		SpeedFast = 1700,                  
-		MoveFastNotEnter = false,            
-		Delay = 2,
-		Reversed = true, -- Đã cập nhật thành True                 
-		EndWhenEnterLatestRoom = false,   
-		EndDelay = 0,
+	task.spawn(function()
 
-		ReboundMoving = false,          
-		TweenSecond = 1.5,            
+		task.wait(0.05)
 
-		ReboundMoveStyle = false,      
-		ReboundStyleTimes = 3,         
-		ReboundStyleSound = "rbxassetid://130994177179386", 
-		ReboundStyleVolume = 5        
-	},
+		local assets = room:FindFirstChild("Assets") or room
 
-	Jumpscare = {
-		Enabled = false,
-		Image1 = "rbxassetid://11253398403", 
-		Image2 = "rbxassetid://12293509957",
-		Sound1 = "rbxassetid://0", 
-		Sound2 = "rbxassetid://109582246349306", 
-		Tease = {
-			[1] = true,
-			Min = 1,
-			Max = 1
-		},
-		Flashing = {
-			[1] = true,
-			[2] = Color3.fromRGB(255, 255, 255)
-		},
-		Shake = true
-	},
-	Rebounding = {
-		Enabled = false,
-		Type = "Ambush",
-		Min = 1,
-		Max = 1,
-		Delay = 2
-	},
-	Damage = {
-		Enabled = true,
-		KillOnMove = false,            
-		Range = 40,
-		Amount = 125,
-		IgnoreHiding = false,
+		local mainBreak = Instance.new("Sound")
+		mainBreak.SoundId = "rbxassetid://9114223171"
+		mainBreak.Volume = 2.5
+		mainBreak.Parent = assets
+		mainBreak:Play()
 
-		JumpscareRipper = {
-			Enabled = true,
-			TargetPartName = "Ripe",
-			AttachmentName = "ripe",
-			ParticleName = "ParticleEmitter",
-			ParticleTexture = "rbxassetid://12737595583",
-			SoundUrl = "https://github.com/eoyoustme/back/raw/main/Kill_with_static.mp3",
-			SlamSoundId = "rbxassetid://0",
-			EndSoundId = "rbxassetid://4988621968",
-			Images = {
-				"rbxassetid://8482795900",
-				"rbxassetid://236542974",
-				"rbxassetid://184251462",
-				"rbxassetid://236777652"
-			},
-			FlashDuration = 1.6
+		mainBreak.Ended:Connect(function()
+			mainBreak:Destroy()
+		end)
+
+		local breakSounds = {
+			"rbxassetid://9125992545",
+			"rbxassetid://4004052860",
+			"rbxassetid://7142857558",
+			"rbxassetid://7142843615",
+			"rbxassetid://2612674531",
+			"rbxassetid://2174790942"
 		}
-	},
-	Crucifixion = {
-		Enabled = true,
-		Range = 40,
-		Resist = false,
-		Break = true
-	},
-	Death = {
-		Type = "Guiding",
-		Hints = {
-			"You died to who you call Ripper...",
-			"When the lights turn red and screen shakes, it is approaching rapidly...",
-			"Hide in a closet or under a bed immediately to stay safe...",
-			"Do not stay in the open when you hear its roar..."
-		},
-		Cause = "Mulit Ripper"
-	}
-})
 
----====== SỰ KIỆN PHÁ ĐỒ KHI QUA CỬA ======---
-local destroyedRooms = {}
+		local blacklist = {
+			"wardrobe",
+			"bed",
+			"rug",
+			"key",
+			"drawer",
+			"book",
+			"breaker",
+			"table",
+			"desk",
+			"gold",
+			"dresser"
+		}
 
-entity:SetCallback("OnEnterRoom", function(room: Model, firstTime: boolean)
-	doorSound1:Play()
-	doorSound2:Play()
-	doorSound3:Play()
+		for _, item in ipairs(assets:GetChildren()) do
 
-	if room and not destroyedRooms[room] then
-		destroyedRooms[room] = true
+			if item:IsA("Model")
+				and item.Name ~= "Door"
+				and item.Name ~= "HidingSpots" then
 
-		task.spawn(function()
-			task.wait(0.05)
+				local lowerName = string.lower(item.Name)
+				local blocked = false
 
-			local breakSound = Instance.new("Sound")
-			breakSound.SoundId = "rbxassetid://9114223171"
-			breakSound.Volume = 2.5
-			breakSound.Parent = room:FindFirstChild("Assets") or room
-			breakSound:Play()
-			breakSound.Ended:Connect(function() breakSound:Destroy() end)
+				for _, word in ipairs(blacklist) do
 
-			local assetContainer = room:FindFirstChild("Assets") or room
-			local breakSounds = {
-				"rbxassetid://9125992545",
-				"rbxassetid://4004052860",
-				"rbxassetid://7142857558",
-				"rbxassetid://7142843615",
-				"rbxassetid://7142857558",
-				"rbxassetid://2612674531",
-				"rbxassetid://2174790942"
-			}
-			local blacklist = {"wardrobe", "bed", "rug", "key", "drawer", "book", "breaker", "table", "desk", "gold", "dresser"}
-
-			for _, item in pairs(assetContainer:GetChildren()) do
-				if item:IsA("Model") and item.Name ~= "Door" and item.Name ~= "HidingSpots" then
-
-					local isBlacklisted = false
-					local itemNameLower = string.lower(item.Name)
-					for _, word in ipairs(blacklist) do
-						if string.find(itemNameLower, word) then
-							isBlacklisted = true
-							break
-						end
+					if string.find(lowerName, word) then
+						blocked = true
+						break
 					end
 
-					if not isBlacklisted then
-						local primary = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")
+				end
 
-						if primary then
-							task.spawn(function()
-								for _, v in ipairs(item:GetDescendants()) do
-									if v:IsA("BasePart") then
-										local lowerName = string.lower(v.Name)
+				if not blocked then
 
-										if not string.find(lowerName, "floor") and not string.find(lowerName, "hitbox") then
-											task.wait(math.random(1, 4) / 100)
+					local primary =
+						item.PrimaryPart
+						or item:FindFirstChildWhichIsA("BasePart")
 
-											local randomSoundId = breakSounds[math.random(1, #breakSounds)]
+					if primary then
 
-											local s = Instance.new("Sound")
-											s.SoundId = randomSoundId
-											s.Volume = math.random(12, 24) / 10 
-											s.PlaybackSpeed = math.random(85, 115) / 100
-											s.RollOffMaxDistance = 100
-											s.Parent = v
-											s:Play()
+						task.spawn(function()
 
-											s.Ended:Connect(function() s:Destroy() end)
+							for _, part in ipairs(item:GetDescendants()) do
 
-											v.Anchored = false
-											v.CanCollide = true 
-											v.CustomPhysicalProperties = PhysicalProperties.new(0.01, 0.01, 0.5, 1, 1)
+								if part:IsA("BasePart") then
 
-											pcall(function()
-												if v:CanSetNetworkOwnership() then
-													v:SetNetworkOwner(LocalPlayer)
-												end
-											end)
+									local n =
+										string.lower(part.Name)
 
-											v.CFrame = v.CFrame + Vector3.new(0, 0.05, 0)
-										end
+									if not string.find(n, "floor")
+										and not string.find(n, "hitbox") then
+
+										task.wait(
+											math.random(1, 4) / 100
+										)
+
+										local sound =
+											Instance.new("Sound")
+
+										sound.SoundId =
+											breakSounds[
+												math.random(
+													1,
+													#breakSounds
+												)
+											]
+
+										sound.Volume =
+											math.random(12, 24) / 10
+
+										sound.PlaybackSpeed =
+											math.random(85, 115) / 100
+
+										sound.RollOffMaxDistance = 100
+										sound.Parent = part
+										sound:Play()
+
+										sound.Ended:Connect(function()
+											sound:Destroy()
+										end)
+
+										part.Anchored = false
+										part.CanCollide = true
+
+										part.CustomPhysicalProperties =
+											PhysicalProperties.new(
+												0.01,
+												0.01,
+												0.5,
+												1,
+												1
+											)
+
+										pcall(function()
+
+											if part:CanSetNetworkOwnership() then
+												part:SetNetworkOwner(
+													LocalPlayer
+												)
+											end
+
+										end)
+
+										part.CFrame =
+											part.CFrame +
+											Vector3.new(0, 0.05, 0)
+
 									end
+
 								end
-							end)
 
-							primary.Anchored = true
-							task.wait()
-							primary.Anchored = false
+							end
 
-							primary.AssemblyLinearVelocity = Vector3.new(
+						end)
+
+						primary.Anchored = true
+						task.wait()
+						primary.Anchored = false
+
+						primary.AssemblyLinearVelocity =
+							Vector3.new(
 								math.random(-60, 60),
 								math.random(20, 50),
 								math.random(-60, 60)
 							)
 
-							primary.AssemblyAngularVelocity = Vector3.new(
+						primary.AssemblyAngularVelocity =
+							Vector3.new(
 								math.random(-25, 25),
 								math.random(-25, 25),
 								math.random(-25, 25)
 							)
-						end
+
 					end
+
 				end
+
 			end
-		end)
-	end
-end)
 
----====== HIỆU ỨNG MÀN HÌNH ĐỎ DẦN RỒI MỜ KHI BỊ CRUCIFIX ======---
-local isCrucified = false
+		end
 
-local function HandleCrucifixEffect()
-	if isCrucified then return end
-	isCrucified = true
-
-	isShaking = false
-
-	local redTween = TweenService:Create(redFrame, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-		BackgroundTransparency = 0.1,
-		BackgroundColor3 = Color3.fromRGB(180, 0, 0)
-	})
-	
-	local lightTween = TweenService:Create(playerLight, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-		Brightness = 8,
-		Range = 150
-	})
-
-	redTween:Play()
-	lightTween:Play()
-
-	task.delay(2, function()
-		local fadeOverlay = TweenService:Create(redFrame, TweenInfo.new(3.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
-			BackgroundTransparency = 1
-		})
-		
-		local fadeLight = TweenService:Create(playerLight, TweenInfo.new(3.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
-			Brightness = 0,
-			Range = 0
-		})
-
-		fadeOverlay:Play()
-		fadeLight:Play()
-
-		fadeLight.Completed:Connect(function()
-			playerLight.Enabled = false
-			playerLight.Parent = nil
-			if redGui and redGui.Parent then 
-				redGui:Destroy() 
-			end
-		end)
 	end)
+
 end
 
-workspace.ChildAdded:Connect(function(child)
-	if string.find(child.Name, "Crucifix") or string.find(child.Name, "Crucifixion") then
-		HandleCrucifixEffect()
+--========================================================--
+-- ACHIEVEMENT
+--========================================================--
+
+local function GiveAchievement()
+
+	if achievementEarned then
+		return
 	end
-end)
 
----====== Callback Despawn ======---
-entity:SetCallback("OnDespawned", function()
-	if not isCrucified then
-		isShaking = false
+	achievementEarned = true
 
-		local fadeOverlay = TweenService:Create(redFrame, TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1})
-		fadeOverlay:Play()
-		
-		local lightFadeOut = TweenService:Create(playerLight, TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Brightness = 0, Range = 0})
-		lightFadeOut:Play()
-		
-		lightFadeOut.Completed:Connect(function()
-			playerLight.Enabled = false
-			playerLight.Parent = nil
-			if redGui and redGui.Parent then redGui:Destroy() end
+	task.spawn(function()
+
+		local ok, achievementGiver =
+			pcall(function()
+
+				return loadstring(game:HttpGet(
+					"https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Doors/Custom%20Achievements/Source.lua"
+				))()
+
+			end)
+
+		if not ok or not achievementGiver then
+			warn("[RIPPER] Achievement loader failed")
+			return
+		end
+
+		pcall(function()
+
+			achievementGiver({
+				Title = "Hide or be Torn Apart",
+				Desc = "Don't Leave Stand still..",
+				Reason = "Encounter and survive Ripper.",
+				Image = "rbxassetid://12231244908"
+			})
+
 		end)
 
-		task.delay(3, function()
-			if introSound then introSound:Stop() end
-			if doorSound1 then doorSound1:Stop() end
-			if doorSound2 then doorSound2:Stop() end
-			if doorSound3 then doorSound3:Stop() end
-		end)
+		print("[RIPPER] Achievement granted")
+
+	end)
+
+end
+
+--========================================================--
+-- CREATE RIPPER
+--========================================================--
+
+local function SpawnRipper()
+
+	if ripperActive then
+		return
 	end
+
+	if hasSpawnedOnce then
+		return
+	end
+
+	local character = LocalPlayer.Character
+
+	local humanoid =
+		character and
+		character:FindFirstChildOfClass("Humanoid")
+
+	if not humanoid or humanoid.Health <= 0 then
+		return
+	end
+
+	--====================================================--
+	-- LOCK PERMANENTLY
+	--====================================================--
+
+	hasSpawnedOnce = true
+	ripperActive = true
+
+	print("[RIPPER] ONE TIME SPAWN")
+
+	--====================================================--
+	-- ENTITY
+	--====================================================--
+
+	local ok, entity = pcall(function()
+
+		return Spawner:Create({
+
+			Entity = {
+				Name = "Ripper Entity",
+				Asset = "15094328656",
+				HeightOffset = 0
+			},
+
+			Lights = {
+				Flicker = {
+					Enabled = true,
+					Duration = 1
+				},
+
+				Shatter = true,
+				Repair = false
+			},
+
+			Earthquake = {
+				Enabled = true
+			},
+
+			Spawned = {
+				ChangeColorWhenSpawn = false,
+				Rainbow = false,
+				Color = Color3.fromRGB(0, 85, 255)
+			},
+
+			CameraShake = {
+				Enabled = true,
+				Range = 100,
+				Values = {1.5, 40, 0.1, 1}
+			},
+
+			Movement = {
+				Speed = 180,
+				SpeedFast = 1700,
+				MoveFastNotEnter = false,
+				Delay = 2,
+				Reversed = false,
+				EndWhenEnterLatestRoom = false,
+				EndDelay = 0,
+
+				ReboundMoving = false,
+				TweenSecond = 1.5,
+
+				ReboundMoveStyle = false,
+				ReboundStyleTimes = 3,
+
+				ReboundStyleSound =
+					"rbxassetid://130994177179386",
+
+				ReboundStyleVolume = 5
+			},
+
+			Jumpscare = {
+				Enabled = false,
+
+				Image1 =
+					"rbxassetid://11253398403",
+
+				Image2 =
+					"rbxassetid://12293509957",
+
+				Sound1 =
+					"rbxassetid://0",
+
+				Sound2 =
+					"rbxassetid://109582246349306",
+
+				Tease = {
+					[1] = true,
+					Min = 1,
+					Max = 1
+				},
+
+				Flashing = {
+					[1] = true,
+					[2] =
+						Color3.fromRGB(
+							255,
+							255,
+							255
+						)
+				},
+
+				Shake = true
+			},
+
+			Rebounding = {
+				Enabled = false,
+				Type = "Ambush",
+				Min = 1,
+				Max = 1,
+				Delay = 2
+			},
+
+			Damage = {
+
+				Enabled = true,
+				KillOnMove = false,
+				Range = 40,
+				Amount = 125,
+				IgnoreHiding = false,
+
+				JumpscareRipper = {
+
+					Enabled = true,
+
+					TargetPartName = "Ripe",
+
+					AttachmentName = "ripe",
+
+					ParticleName =
+						"ParticleEmitter",
+
+					ParticleTexture =
+						"rbxassetid://12737595583",
+
+					SoundUrl =
+						"https://github.com/eoyoustme/back/raw/main/Kill_with_static.mp3",
+
+					SlamSoundId =
+						"rbxassetid://0",
+
+					EndSoundId =
+						"rbxassetid://4988621968",
+
+					Images = {
+
+						"rbxassetid://8482795900",
+						"rbxassetid://236542974",
+						"rbxassetid://184251462",
+						"rbxassetid://236777652"
+					},
+
+					FlashDuration = 1.6
+				}
+			},
+
+			Crucifixion = {
+				Enabled = true,
+				Range = 40,
+				Resist = false,
+				Break = true
+			},
+
+			Death = {
+				Type = "Guiding",
+				Cause = "Ripper"
+			}
+
+		})
+
+	end)
+
+	if not ok or not entity then
+
+		warn("[RIPPER] Entity creation failed")
+
+		ripperActive = false
+
+		-- Không cho thử lại
+		hasSpawnedOnce = true
+
+		return
+	end
+
+	--====================================================--
+	-- CALLBACKS
+	--====================================================--
+
+	entity:SetCallback("OnSpawned", function()
+
+		print("[RIPPER] Entity spawned")
+
+		introSound:Stop()
+		introSound.TimePosition = 0
+		introSound:Play()
+
+		TweenService:Create(
+			redFrame,
+			TweenInfo.new(1),
+			{
+				BackgroundTransparency = 0.3
+			}
+		):Play()
+
+	end)
+
+	entity:SetCallback("OnStartMoving", function()
+
+		print("[RIPPER] Moving")
+
+	end)
+
+	entity:SetCallback(
+		"OnEnterRoom",
+		function(room, firstTime)
+
+			doorSound1:Play()
+			doorSound2:Play()
+			doorSound3:Play()
+
+			BreakRoom(room)
+
+		end
+	)
+
+	entity:SetCallback(
+		"OnLookAt",
+		function(lineOfSight)
+		end
+	)
+
+	entity:SetCallback(
+		"OnRebounding",
+		function(startOfRebound)
+		end
+	)
+
+	entity:SetCallback(
+		"EndWhenGO",
+		function()
+		end
+	)
+
+	entity:SetCallback(
+		"OnDespawning",
+		function()
+
+			print("[RIPPER] Despawning")
+
+			TweenService:Create(
+				redFrame,
+				TweenInfo.new(1),
+				{
+					BackgroundTransparency = 1
+				}
+			):Play()
+
+		end
+	)
+
+	entity:SetCallback(
+		"OnDespawned",
+		function()
+
+			print("[RIPPER] Despawned")
+
+			ripperActive = false
+
+			introSound:Stop()
+			doorSound1:Stop()
+			doorSound2:Stop()
+			doorSound3:Stop()
+
+			TweenService:Create(
+				redFrame,
+				TweenInfo.new(1),
+				{
+					BackgroundTransparency = 1
+				}
+			):Play()
+
+			local char =
+				LocalPlayer.Character
+
+			local hum =
+				char and
+				char:FindFirstChildOfClass("Humanoid")
+
+			if hum and hum.Health > 0 then
+				GiveAchievement()
+			end
+
+		end
+	)
+
+	entity:SetCallback(
+		"OnDamagePlayer",
+		function(newHealth)
+
+			print(
+				"[RIPPER] Player damaged:",
+				newHealth
+			)
+
+		end
+	)
+
+	--====================================================--
+	-- RUN
+	--====================================================--
+
+	task.spawn(function()
+
+		task.wait(0.1)
+
+		local runOK, runError =
+			pcall(function()
+				entity:Run(true)
+			end)
+
+		if not runOK then
+
+			warn(
+				"[RIPPER] Run failed:",
+				runError
+			)
+
+			ripperActive = false
+
+		end
+
+	end)
+
+end
+
+--========================================================--
+-- ROOM NUMBER
+--========================================================--
+
+local CurrentRooms =
+	workspace:WaitForChild("CurrentRooms")
+
+local highestRoom = -1
+
+local function GetRoomNumber(room)
+
+	if not room then
+		return nil
+	end
+
+	local attribute =
+		room:GetAttribute("RoomNumber")
+
+	if typeof(attribute) == "number" then
+		return attribute
+	end
+
+	return tonumber(room.Name)
+
+end
+
+--========================================================--
+-- INITIAL ROOM
+--========================================================--
+
+for _, room in ipairs(CurrentRooms:GetChildren()) do
+
+	local number =
+		GetRoomNumber(room)
+
+	if number and number > highestRoom then
+		highestRoom = number
+	end
+
+end
+
+print(
+	"[RIPPER] Current room:",
+	highestRoom
+)
+
+--========================================================--
+-- FIRST NEW ROOM ONLY
+--========================================================--
+
+local function NewRoom(room)
+
+	local roomNumber =
+		GetRoomNumber(room)
+
+	if not roomNumber then
+		return
+	end
+
+	-- Không xử lý room cũ
+	if roomNumber <= highestRoom then
+		return
+	end
+
+	highestRoom = roomNumber
+
+	print(
+		"[RIPPER] New room:",
+		roomNumber
+	)
+
+	--====================================================--
+	-- CHỈ SPAWN 1 LẦN
+	--====================================================--
+
+	if hasSpawnedOnce then
+		print("[RIPPER] Already spawned once - ignored")
+		return
+	end
+
+	local char =
+		LocalPlayer.Character
+
+	local hum =
+		char and
+		char:FindFirstChildOfClass("Humanoid")
+
+	if not hum or hum.Health <= 0 then
+		return
+	end
+
+	print("[RIPPER] FIRST NEW ROOM - SPAWNING")
+
+	task.spawn(function()
+		SpawnRipper()
+	end)
+
+end
+
+--========================================================--
+-- WATCH CURRENT ROOMS
+--========================================================--
+
+CurrentRooms.ChildAdded:Connect(function(room)
+
+	task.spawn(function()
+
+		task.wait(0.15)
+
+		NewRoom(room)
+
+	end)
+
 end)
 
----====== Run Entity Immediately (Reversed) ======---
-isShaking = true
-introSound:Play()
+--========================================================--
+-- BACKUP ROOM CHECK
+--========================================================--
 
-local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local root = char:WaitForChild("HumanoidRootPart")
-playerLight.Parent = root
-playerLight.Enabled = true
+task.spawn(function()
 
-TweenService:Create(redFrame, TweenInfo.new(3), {BackgroundTransparency = 0.3}):Play()
-TweenService:Create(playerLight, TweenInfo.new(3), {Brightness = 3}):Play()
+	while task.wait(0.5) do
 
-introSound.Ended:Connect(function()
-	entity:Run(false) -- Đã sửa thành False để chạy Reversed sau khi kết thúc Intro sound
+		if hasSpawnedOnce then
+			continue
+		end
+
+		local newest = highestRoom
+		local newestRoom = nil
+
+		for _, room in ipairs(
+			CurrentRooms:GetChildren()
+		) do
+
+			local number =
+				GetRoomNumber(room)
+
+			if number and number > newest then
+
+				newest = number
+				newestRoom = room
+
+			end
+
+		end
+
+		if newestRoom then
+			NewRoom(newestRoom)
+		end
+
+	end
+
 end)
 
+--========================================================--
+-- READY
+--========================================================--
+
+print("--------------------------------")
+print("       RIPPER ONE TIME READY")
+print("--------------------------------")
+print("Chance : DISABLED")
+print("Random : DISABLED")
+print("Initial Spawn : OFF")
+print("First New Room : SPAWN")
+print("Maximum Spawn : 1")
+print("Achievement : ONCE")
+print("--------------------------------")
