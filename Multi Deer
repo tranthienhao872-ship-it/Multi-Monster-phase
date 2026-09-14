@@ -47,7 +47,7 @@ local LIFETIME = 95
 --                   SPAWN DEERGOD
 --========================================================--
 
-local deergod = game:GetObjects("rbxassetid://13390488111")[1]
+local deergod = game:GetObjects("rbxassetid://121123491310992")[1]
 
 if not deergod then
 	warn("Không load được DeerGod")
