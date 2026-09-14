@@ -13,7 +13,7 @@ local Spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/Regul
 local entity = Spawner:Create({
 	Entity = {
 		Name = "Silence",
-		Asset = "13390488111",
+		Asset = "80450873969023",
 		HeightOffset = 0
 	},
 	Lights = {
