@@ -17,11 +17,11 @@ local RNG = Random.new()
 
 local SPAWN_INTERVAL = 3
 
-local MIN_TIME = 2
-local MAX_TIME = 4
+local MIN_TIME = 7
+local MAX_TIME = 8
 
-local MIN_DAMAGE = 29
-local MAX_DAMAGE = 35
+local MIN_DAMAGE = 15
+local MAX_DAMAGE = 29
 
 -- Cửa sổ xuất hiện
 local SPAWN_SOUND_ID = "rbxassetid://12221944"
