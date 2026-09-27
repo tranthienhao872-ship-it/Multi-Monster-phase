@@ -1,0 +1,1296 @@
+---====== Load spawner ======---
+
+local Spawner = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/RegularVynixu/DOORS-Entity-Spawner-V2/main/init.luau"
+))()
+
+---====== Services ======---
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local SoundService = game:GetService("SoundService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+---====== Cease Spawn Sounds ======---
+
+local SPAWN_SOUND_1_ID = "rbxassetid://166047422"
+local SPAWN_SOUND_2_ID = "rbxassetid://9125632539"
+
+local SPAWN_SOUND_VOLUME = 12
+
+local SPAWN_SOUND_1_PITCH = 1
+local SPAWN_SOUND_2_PITCH = 0.5
+
+local spawnSound1 = nil
+local spawnSound2 = nil
+
+local function CreateSpawnSounds()
+
+    -- Xóa sound cũ nếu script bị chạy lại
+    local old1 = SoundService:FindFirstChild("CeaseSpawnSound1")
+    if old1 then
+        old1:Destroy()
+    end
+
+    local old2 = SoundService:FindFirstChild("CeaseSpawnSound2")
+    if old2 then
+        old2:Destroy()
+    end
+
+    -- Sound 1
+    spawnSound1 = Instance.new("Sound")
+    spawnSound1.Name = "CeaseSpawnSound1"
+    spawnSound1.SoundId = SPAWN_SOUND_1_ID
+    spawnSound1.Volume = SPAWN_SOUND_VOLUME
+    spawnSound1.PlaybackSpeed = SPAWN_SOUND_1_PITCH
+    spawnSound1.Looped = false
+    spawnSound1.Parent = SoundService
+
+    -- Sound 2
+    spawnSound2 = Instance.new("Sound")
+    spawnSound2.Name = "CeaseSpawnSound2"
+    spawnSound2.SoundId = SPAWN_SOUND_2_ID
+    spawnSound2.Volume = SPAWN_SOUND_VOLUME
+    spawnSound2.PlaybackSpeed = SPAWN_SOUND_2_PITCH
+    spawnSound2.Looped = false
+    spawnSound2.Parent = SoundService
+end
+
+local function PlaySpawnSounds()
+
+    if not spawnSound1 or not spawnSound1.Parent then
+        CreateSpawnSounds()
+    end
+
+    if not spawnSound2 or not spawnSound2.Parent then
+        CreateSpawnSounds()
+    end
+
+    -- Reset về đầu
+    spawnSound1.TimePosition = 0
+    spawnSound2.TimePosition = 0
+
+    -- PLAY CÙNG LÚC
+    spawnSound1:Play()
+    spawnSound2:Play()
+end
+
+---====== The Mines Reverb ======---
+
+local minesReverb = nil
+local minesReverbEnabled = false
+
+local function CreateMinesReverb()
+
+    if minesReverb and minesReverb.Parent then
+        return
+    end
+
+    minesReverb = Instance.new("ReverbSoundEffect")
+
+    minesReverb.Name = "CeaseMinesReverb"
+
+    -- Echo/vang kiểu không gian rộng
+    minesReverb.DecayTime = 5
+    minesReverb.Density = 0.8
+    minesReverb.Diffusion = 0.9
+
+    -- Vang rõ
+    minesReverb.WetLevel = 0.65
+    minesReverb.DryLevel = 0.7
+
+    minesReverb.Enabled = false
+
+    -- Gắn vào sound để chỉ Cease spawn sound bị vang
+    minesReverb.Parent = spawnSound1
+end
+
+local function SetMinesReverb(enabled)
+
+    if not spawnSound1 or not spawnSound1.Parent then
+        return
+    end
+
+    if not minesReverb or not minesReverb.Parent then
+        CreateMinesReverb()
+    end
+
+    if minesReverb then
+        minesReverb.Enabled = enabled
+    end
+
+    minesReverbEnabled = enabled
+end
+
+---====== Kiểm tra The Mines ======---
+
+local function IsInTheMines()
+
+    local currentRooms =
+        Workspace:FindFirstChild("CurrentRooms")
+
+    if not currentRooms then
+        return false
+    end
+
+    local character = player.Character
+
+    if not character then
+        return false
+    end
+
+    local hrp =
+        character:FindFirstChild("HumanoidRootPart")
+
+    if not hrp then
+        return false
+    end
+
+    -- Cách 1: Game có Attribute/Name báo Mines
+    local floor = Workspace:GetAttribute("Floor")
+
+    if floor then
+        local floorText = tostring(floor):lower()
+
+        if floorText:find("mines") then
+            return true
+        end
+    end
+
+    -- Cách 2: tìm folder/instance Mines
+    for _, obj in ipairs(Workspace:GetChildren()) do
+
+        local name = obj.Name:lower()
+
+        if name == "the mines"
+            or name == "mines"
+            or name:find("mines") then
+
+            return true
+        end
+    end
+
+    -- Cách 3: kiểm tra room hiện tại
+    for _, room in ipairs(
+        currentRooms:GetChildren()
+    ) do
+
+        if room:IsA("Model") then
+
+            local roomPart =
+                room:FindFirstChild("RoomEntrance")
+                or room:FindFirstChild("Entrance")
+                or room.PrimaryPart
+
+            if roomPart
+                and roomPart:IsA("BasePart") then
+
+                local distance =
+                    (
+                        hrp.Position
+                        - roomPart.Position
+                    ).Magnitude
+
+                if distance < 100 then
+
+                    local roomName =
+                        room.Name:lower()
+
+                    if roomName:find("mine") then
+                        return true
+                    end
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+local minesCheckConnection = nil
+
+local function StartMinesReverbCheck()
+
+    if minesCheckConnection then
+        return
+    end
+
+    minesCheckConnection =
+        RunService.Heartbeat:Connect(
+        function()
+
+            if not spawnSound1
+                or not spawnSound1.Parent then
+
+                return
+            end
+
+            local inMines =
+                IsInTheMines()
+
+            if inMines ~= minesReverbEnabled then
+
+                SetMinesReverb(inMines)
+
+            end
+        end
+    )
+end
+
+---====== Tạo màn hình xanh dương ======---
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CeaseBlueScreen"
+screenGui.ResetOnSpawn = false
+screenGui.DisplayOrder = 999
+screenGui.IgnoreGuiInset = true
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+screenGui.Parent = playerGui
+
+local blueFrame = Instance.new("Frame")
+blueFrame.Name = "BlueOverlay"
+blueFrame.Size = UDim2.new(1, 0, 1, 0)
+blueFrame.Position = UDim2.new(0, 0, 0, 0)
+blueFrame.BackgroundColor3 = Color3.fromRGB(0, 25, 120)
+blueFrame.BorderSizePixel = 0
+blueFrame.BackgroundTransparency = 1
+blueFrame.ZIndex = 999
+blueFrame.Parent = screenGui
+
+local BLUE_VISIBLE_TRANSPARENCY = 0.35
+local FADE_DURATION = 2
+
+local function FadeTo(target: number, duration: number)
+
+    if not blueFrame
+        or not blueFrame.Parent then
+
+        return
+    end
+
+    local tween = TweenService:Create(
+        blueFrame,
+        TweenInfo.new(
+            duration,
+            Enum.EasingStyle.Sine,
+            Enum.EasingDirection.InOut
+        ),
+        {
+            BackgroundTransparency = target
+        }
+    )
+
+    tween:Play()
+
+    return tween
+end
+
+---====== Blue Light ======---
+
+local blueLight: PointLight? = nil
+
+local LIGHT_MAX_BRIGHTNESS = 2.5
+local LIGHT_RANGE = 100
+
+local function GetHRP(): BasePart?
+
+    local character = player.Character
+
+    if not character then
+        return nil
+    end
+
+    return character:FindFirstChild(
+        "HumanoidRootPart"
+    ) :: BasePart?
+end
+
+local function CreatePlayerLight()
+
+    local hrp = GetHRP()
+
+    if not hrp then
+        return
+    end
+
+    local existing =
+        hrp:FindFirstChild(
+            "CeaseBlueLight"
+        )
+
+    if existing then
+        existing:Destroy()
+    end
+
+    local light =
+        Instance.new("PointLight")
+
+    light.Name = "CeaseBlueLight"
+    light.Color =
+        Color3.fromRGB(
+            60,
+            120,
+            255
+        )
+
+    light.Range = LIGHT_RANGE
+    light.Brightness = 0
+    light.Shadows = true
+
+    light.Parent = hrp
+
+    blueLight = light
+end
+
+local function FadeLight(
+    target: number,
+    duration: number
+)
+
+    if not blueLight
+        or not blueLight.Parent then
+
+        CreatePlayerLight()
+    end
+
+    if blueLight then
+
+        local tween =
+            TweenService:Create(
+                blueLight,
+
+                TweenInfo.new(
+                    duration,
+                    Enum.EasingStyle.Sine,
+                    Enum.EasingDirection.InOut
+                ),
+
+                {
+                    Brightness = target
+                }
+            )
+
+        tween:Play()
+    end
+end
+
+player.CharacterAdded:Connect(
+    function()
+
+        task.wait(0.5)
+
+        if screenGui
+            and screenGui.Parent then
+
+            CreatePlayerLight()
+        end
+    end
+)
+
+CreatePlayerLight()
+
+---====== Death ======---
+
+local DeathConfig = {
+
+    Type = "Guiding",
+
+    Hints = {
+
+        "Oh hi you die by Cease..",
+
+        "This entity is so basic to survive..",
+
+        "You just stand don't move..if you move..you die..",
+
+        "Good luck pal.."
+    },
+
+    Cause = "Cease"
+}
+
+---====== Entity Model ======---
+
+local entityModel: Model? = nil
+
+local function TryFindEntityModel(
+    entityTable: any
+): Model?
+
+    local ok, result =
+        pcall(function()
+
+            return entityTable.Model
+                or entityTable.Instance
+                or entityTable.Rig
+                or entityTable.Character
+
+        end)
+
+    if ok
+        and result
+        and typeof(result) == "Instance" then
+
+        if result:IsA("Model") then
+            return result
+        end
+    end
+
+    for _, inst in ipairs(
+        Workspace:GetDescendants()
+    ) do
+
+        if inst:IsA("Model")
+            and inst.Name == "Cease" then
+
+            return inst
+        end
+    end
+
+    return nil
+end
+
+local function ResolveEntityModel(
+    entityTable: any
+)
+
+    task.spawn(function()
+
+        for attempt = 1, 20 do
+
+            local found =
+                TryFindEntityModel(
+                    entityTable
+                )
+
+            if found then
+
+                entityModel = found
+
+                print(
+                    "[Cease] Found:",
+                    found:GetFullName()
+                )
+
+                return
+            end
+
+            task.wait(0.25)
+        end
+
+        warn(
+            "[Cease] Cannot find entity model."
+        )
+    end)
+end
+
+local function SetEntityDamageAttribute(
+    state: boolean
+)
+
+    if not entityModel then
+        return
+    end
+
+    if not entityModel.Parent then
+        return
+    end
+
+    pcall(function()
+
+        entityModel:SetAttribute(
+            "Damage",
+            state
+        )
+
+    end)
+end
+
+---====== Player ======---
+
+local function GetHumanoid(): Humanoid?
+
+    local character =
+        player.Character
+
+    if not character then
+        return nil
+    end
+
+    return character:FindFirstChildOfClass(
+        "Humanoid"
+    )
+end
+
+local function IsPlayerHiding(): boolean
+
+    local character =
+        player.Character
+
+    if not character then
+        return false
+    end
+
+    return character:GetAttribute(
+        "Hiding"
+    ) == true
+end
+
+---====== Player Room ======---
+
+local function GetPlayerRoom(): Model?
+
+    local hrp = GetHRP()
+
+    if not hrp then
+        return nil
+    end
+
+    local currentRooms =
+        Workspace:FindFirstChild(
+            "CurrentRooms"
+        )
+
+    if not currentRooms then
+        return nil
+    end
+
+    local closestRoom = nil
+    local closestDistance = math.huge
+
+    for _, room in ipairs(
+        currentRooms:GetChildren()
+    ) do
+
+        if room:IsA("Model") then
+
+            local roomPart =
+                room:FindFirstChild(
+                    "RoomEntrance"
+                )
+                or room:FindFirstChild(
+                    "Entrance"
+                )
+                or room.PrimaryPart
+
+            if roomPart
+                and roomPart:IsA("BasePart") then
+
+                local distance =
+                    (
+                        hrp.Position
+                        - roomPart.Position
+                    ).Magnitude
+
+                if distance < closestDistance then
+
+                    closestDistance = distance
+                    closestRoom = room
+
+                end
+            end
+        end
+    end
+
+    return closestRoom
+end
+
+---====== Entity Room ======---
+
+local function GetEntityRoom(): Model?
+
+    if not entityModel then
+        return nil
+    end
+
+    if not entityModel.Parent then
+        return nil
+    end
+
+    local entityPart =
+        entityModel.PrimaryPart
+        or entityModel:FindFirstChild(
+            "HumanoidRootPart"
+        )
+        or entityModel:FindFirstChildWhichIsA(
+            "BasePart",
+            true
+        )
+
+    if not entityPart
+        or not entityPart:IsA("BasePart") then
+
+        return nil
+    end
+
+    local currentRooms =
+        Workspace:FindFirstChild(
+            "CurrentRooms"
+        )
+
+    if not currentRooms then
+        return nil
+    end
+
+    local closestRoom = nil
+    local closestDistance = math.huge
+
+    for _, room in ipairs(
+        currentRooms:GetChildren()
+    ) do
+
+        if room:IsA("Model") then
+
+            local roomPart =
+                room:FindFirstChild(
+                    "RoomEntrance"
+                )
+                or room:FindFirstChild(
+                    "Entrance"
+                )
+                or room.PrimaryPart
+
+            if roomPart
+                and roomPart:IsA("BasePart") then
+
+                local distance =
+                    (
+                        entityPart.Position
+                        - roomPart.Position
+                    ).Magnitude
+
+                if distance < closestDistance then
+
+                    closestDistance = distance
+                    closestRoom = room
+
+                end
+            end
+        end
+    end
+
+    return closestRoom
+end
+
+---====== States ======---
+
+local isEntityActive = false
+local movePenaltyEnabled = false
+local ceaseInPlayerRoom = false
+
+local ceaseRebounding = false
+
+local scanConnection:
+    RBXScriptConnection? = nil
+
+local lastAttributeState:
+    boolean? = nil
+
+local VELOCITY_THRESHOLD = 0.05
+
+---====== Same Room ======---
+
+local function IsCeaseInPlayerRoom(): boolean
+
+    if not entityModel then
+        return false
+    end
+
+    local playerRoom =
+        GetPlayerRoom()
+
+    local ceaseRoom =
+        GetEntityRoom()
+
+    if not playerRoom
+        or not ceaseRoom then
+
+        return false
+    end
+
+    return playerRoom == ceaseRoom
+end
+
+local function UpdateCeaseRoomState()
+
+    if not isEntityActive then
+
+        ceaseInPlayerRoom = false
+
+        return
+    end
+
+    -- Rebound thì không xử lý room
+    if ceaseRebounding then
+        return
+    end
+
+    local sameRoom =
+        IsCeaseInPlayerRoom()
+
+    if sameRoom then
+
+        ceaseInPlayerRoom = true
+
+    else
+
+        ceaseInPlayerRoom = false
+
+        if lastAttributeState ~= false then
+
+            SetEntityDamageAttribute(false)
+
+            lastAttributeState = false
+
+        end
+    end
+end
+
+---====== Movement Scan ======---
+
+local function StartMoveScan()
+
+    if scanConnection then
+        return
+    end
+
+    scanConnection =
+        RunService.Heartbeat:Connect(
+        function()
+
+            if not isEntityActive then
+                return
+            end
+
+            if not movePenaltyEnabled then
+                return
+            end
+
+            -- REBOUND PROTECTION
+            if ceaseRebounding then
+
+                if lastAttributeState ~= false then
+
+                    SetEntityDamageAttribute(
+                        false
+                    )
+
+                    lastAttributeState = false
+                end
+
+                return
+            end
+
+            UpdateCeaseRoomState()
+
+            -- Chưa cùng phòng
+            if not ceaseInPlayerRoom then
+
+                if lastAttributeState ~= false then
+
+                    SetEntityDamageAttribute(
+                        false
+                    )
+
+                    lastAttributeState = false
+                end
+
+                return
+            end
+
+            local humanoid =
+                GetHumanoid()
+
+            if not humanoid then
+                return
+            end
+
+            if humanoid.Health <= 0 then
+                return
+            end
+
+            -- Trốn tủ
+            if IsPlayerHiding() then
+
+                if lastAttributeState ~= false then
+
+                    SetEntityDamageAttribute(
+                        false
+                    )
+
+                    lastAttributeState = false
+                end
+
+                return
+            end
+
+            local hrp =
+                GetHRP()
+
+            if not hrp then
+                return
+            end
+
+            local velocity =
+                hrp.AssemblyLinearVelocity
+
+            local horizontalSpeed =
+                Vector2.new(
+                    velocity.X,
+                    velocity.Z
+                ).Magnitude
+
+            local isMoving =
+                horizontalSpeed >
+                VELOCITY_THRESHOLD
+
+            if isMoving then
+
+                if lastAttributeState ~= true then
+
+                    print(
+                        "[Cease] MOVING -> DAMAGE 100"
+                    )
+
+                    SetEntityDamageAttribute(
+                        true
+                    )
+
+                    lastAttributeState = true
+                end
+
+            else
+
+                if lastAttributeState ~= false then
+
+                    SetEntityDamageAttribute(
+                        false
+                    )
+
+                    lastAttributeState = false
+                end
+            end
+        end
+    )
+end
+
+local function StopMoveScan()
+
+    if scanConnection then
+
+        scanConnection:Disconnect()
+
+        scanConnection = nil
+    end
+
+    lastAttributeState = nil
+    ceaseInPlayerRoom = false
+    ceaseRebounding = false
+
+    SetEntityDamageAttribute(false)
+end
+
+---====== Create Entity ======---
+
+local entity = Spawner:Create({
+
+    Entity = {
+
+        Name = "Cease",
+
+        Asset =
+            "https://github.com/tranthienhao872-ship-it/Multi-Monster-phase/raw/refs/heads/main/model%2010959918411%20Studio%20Lite%20WorkspaceMULTI%20Cease.rbxmx",
+
+        HeightOffset = 0
+    },
+
+    Lights = {
+
+        Flicker = {
+            Enabled = false,
+            Duration = 1
+        },
+
+        Shatter = false,
+        Repair = false
+    },
+
+    Earthquake = {
+        Enabled = true
+    },
+
+    CameraShake = {
+
+        Enabled = true,
+
+        Range = 150,
+
+        Values = {
+            1.5,
+            30,
+            0.1,
+            1
+        }
+    },
+
+    Movement = {
+
+        Speed = 85,
+        Delay = 4.3,
+        Reversed = false
+    },
+
+    Rebounding = {
+
+        Enabled = true,
+        Type = "Blitz",
+
+        Min = 1,
+        Max = 1,
+
+        Delay = 0
+    },
+
+    Damage = {
+
+        Enabled = true,
+        Range = 40,
+
+        Amount = 100
+    },
+
+    Crucifixion = {
+
+        Enabled = true,
+        Range = 40,
+
+        Resist = false,
+        Break = true
+    },
+
+    Death = DeathConfig
+})
+
+ResolveEntityModel(entity)
+
+---====== OnSpawned ======---
+
+entity:SetCallback(
+    "OnSpawned",
+    function()
+
+        print(
+            "[Cease] Entity has spawned"
+        )
+
+        -- 🔊 2 SOUND PHÁT CÙNG LÚC
+        PlaySpawnSounds()
+
+        -- Kiểm tra The Mines
+        StartMinesReverbCheck()
+
+        isEntityActive = true
+
+        movePenaltyEnabled = false
+
+        ceaseInPlayerRoom = false
+
+        ceaseRebounding = false
+
+        lastAttributeState = nil
+
+        SetEntityDamageAttribute(false)
+
+        StartMoveScan()
+
+        local fadeTween =
+            FadeTo(
+                BLUE_VISIBLE_TRANSPARENCY,
+                FADE_DURATION
+            )
+
+        FadeLight(
+            LIGHT_MAX_BRIGHTNESS,
+            FADE_DURATION
+        )
+
+        task.spawn(function()
+
+            if fadeTween then
+
+                fadeTween.Completed:Wait()
+
+            else
+
+                task.wait(
+                    FADE_DURATION
+                )
+            end
+
+            if isEntityActive then
+
+                movePenaltyEnabled = true
+
+                print(
+                    "[Cease] Movement detection ENABLED"
+                )
+            end
+        end)
+    end
+)
+
+---====== OnStartMoving ======---
+
+entity:SetCallback(
+    "OnStartMoving",
+    function()
+
+        print(
+            "[Cease] Entity has started moving"
+        )
+
+    end
+)
+
+---====== OnEnterRoom ======---
+
+entity:SetCallback(
+    "OnEnterRoom",
+    function(
+        room: Model,
+        firstTime: boolean
+    )
+
+        if firstTime then
+
+            print(
+                "[Cease] Entered room:",
+                room.Name
+            )
+
+        else
+
+            print(
+                "[Cease] Entered room again:",
+                room.Name
+            )
+        end
+
+        task.defer(function()
+
+            if not isEntityActive then
+                return
+            end
+
+            if ceaseRebounding then
+                return
+            end
+
+            local playerRoom =
+                GetPlayerRoom()
+
+            if playerRoom == room then
+
+                ceaseInPlayerRoom = true
+
+                print(
+                    "[Cease] SAME ROOM -> STAND STILL"
+                )
+
+            else
+
+                ceaseInPlayerRoom = false
+
+                SetEntityDamageAttribute(
+                    false
+                )
+
+                lastAttributeState = false
+
+                print(
+                    "[Cease] DIFFERENT ROOM -> SAFE"
+                )
+            end
+        end)
+    end
+)
+
+---====== OnLookAt ======---
+
+entity:SetCallback(
+    "OnLookAt",
+    function(
+        lineOfSight: boolean
+    )
+
+        if lineOfSight then
+
+            print(
+                "[Cease] Player looking at entity"
+            )
+
+        else
+
+            print(
+                "[Cease] Player view obstructed"
+            )
+        end
+    end
+)
+
+---====== OnRebounding ======---
+
+entity:SetCallback(
+    "OnRebounding",
+    function(
+        startOfRebound: boolean
+    )
+
+        if startOfRebound then
+
+            -- REBOUND START
+            ceaseRebounding = true
+
+            -- TẮT DAMAGE NGAY
+            SetEntityDamageAttribute(false)
+
+            lastAttributeState = false
+
+            print(
+                "[Cease] REBOUND START -> DAMAGE OFF"
+            )
+
+        else
+
+            -- REBOUND END
+            ceaseRebounding = false
+
+            -- Xóa trạng thái damage cũ
+            SetEntityDamageAttribute(false)
+
+            lastAttributeState = false
+
+            print(
+                "[Cease] REBOUND END -> CHECK ON"
+            )
+        end
+    end
+)
+
+---====== OnDespawning ======---
+
+entity:SetCallback(
+    "OnDespawning",
+    function()
+
+        print(
+            "[Cease] Entity is despawning"
+        )
+
+        isEntityActive = false
+        movePenaltyEnabled = false
+        ceaseInPlayerRoom = false
+        ceaseRebounding = false
+
+        StopMoveScan()
+
+        FadeTo(
+            1,
+            FADE_DURATION
+        )
+
+        FadeLight(
+            0,
+            FADE_DURATION
+        )
+    end
+)
+
+---====== OnDespawned ======---
+
+entity:SetCallback(
+    "OnDespawned",
+    function()
+
+        print(
+            "[Cease] Entity has despawned"
+        )
+
+        isEntityActive = false
+        movePenaltyEnabled = false
+        ceaseInPlayerRoom = false
+        ceaseRebounding = false
+
+        StopMoveScan()
+
+        if blueFrame
+            and blueFrame.Parent then
+
+            blueFrame.BackgroundTransparency = 1
+        end
+
+        if screenGui
+            and screenGui.Parent then
+
+            screenGui:Destroy()
+        end
+
+        if blueLight then
+
+            blueLight.Brightness = 0
+
+            blueLight:Destroy()
+
+            blueLight = nil
+        end
+
+        -- Dừng reverb
+        if minesReverb then
+            minesReverb.Enabled = false
+        end
+
+        -- Dừng 2 sound nếu vẫn còn phát
+        if spawnSound1 then
+            spawnSound1:Stop()
+        end
+
+        if spawnSound2 then
+            spawnSound2:Stop()
+        end
+
+        entityModel = nil
+    end
+)
+
+---====== OnDamagePlayer ======---
+
+entity:SetCallback(
+    "OnDamagePlayer",
+    function(
+        newHealth: number
+    )
+
+        if newHealth <= 0 then
+
+            print(
+                "[Cease] Entity killed player"
+            )
+
+        else
+
+            print(
+                "[Cease] Entity damaged player"
+            )
+        end
+    end
+)
+
+---====== Run Entity ======---
+
+CreateSpawnSounds()
+
+entity:Run(true)
