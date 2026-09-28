@@ -383,7 +383,7 @@ local function SpawnReboundEntity()
 		Damage = {
 			Enabled = true,
 			Range = 40,
-			Amount = 45
+			Amount = 15
 		},
 		Crucifixion = {
 			Enabled = true,
