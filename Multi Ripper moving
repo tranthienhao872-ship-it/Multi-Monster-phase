@@ -366,7 +366,7 @@ local function SpawnRipper()
 
 			Entity = {
 				Name = "Ripper Entity",
-				Asset = "https://github.com/tranthienhao872-ship-it/Multi-Monster-phase/raw/refs/heads/main/model%2010959918411%20Studio%20Lite%20WorkspaceMultiRippermoving.rbxmx",
+				Asset = "https://github.com/tranthienhao872-ship-it/Multi-Monster-phase/raw/refs/heads/main/model%2010959918411%20Studio%20Lite%20Workspaceminionsa.rbxmx",
 				HeightOffset = 0
 			},
 
