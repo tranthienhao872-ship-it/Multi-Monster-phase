@@ -1,0 +1,785 @@
+--//======================================================
+--// A-60.1 ENTITY
+--// BRIGHT BURGUNDY RED SCREEN FADE
+--// Delta Executor | Mobile + PC
+--//======================================================
+
+getgenv().OgHungerNewSpawner = nil
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+
+local LocalPlayer = Players.LocalPlayer
+
+--//======================================================
+--// RED SCREEN VARIABLES
+--//======================================================
+
+local RedEffectGui = nil
+local RedColorEffect = nil
+
+--//======================================================
+--// CREATE BRIGHT BURGUNDY SCREEN
+--//======================================================
+
+local function CreateRedScreen()
+
+	-- Remove old GUI
+	if RedEffectGui then
+		pcall(function()
+			RedEffectGui:Destroy()
+		end)
+
+		RedEffectGui = nil
+	end
+
+	-- Remove old ColorCorrection
+	if RedColorEffect then
+		pcall(function()
+			RedColorEffect:Destroy()
+		end)
+
+		RedColorEffect = nil
+	end
+
+	local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+	--// ScreenGui
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "A60_1_BrightBurgundyEffect"
+	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = true
+	gui.DisplayOrder = 999998
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+	gui.Parent = PlayerGui
+
+	RedEffectGui = gui
+
+	--// Main red screen
+	local Frame = Instance.new("Frame")
+
+	Frame.Name = "BrightBurgundyScreen"
+
+	Frame.Size = UDim2.fromScale(1, 1)
+	Frame.Position = UDim2.fromScale(0, 0)
+
+	--// Bright Burgundy
+	Frame.BackgroundColor3 =
+		Color3.fromRGB(145, 0, 35)
+
+	Frame.BackgroundTransparency = 1
+	Frame.BorderSizePixel = 0
+
+	Frame.ZIndex = 999998
+	Frame.Parent = gui
+
+	--//==================================================
+	--// FADE IN
+	--//==================================================
+
+	local fadeIn = TweenService:Create(
+		Frame,
+
+		TweenInfo.new(
+			1.2,
+			Enum.EasingStyle.Sine,
+			Enum.EasingDirection.Out
+		),
+
+		{
+			BackgroundTransparency = 0.43
+		}
+	)
+
+	fadeIn:Play()
+
+	--//==================================================
+	--// BRIGHT BURGUNDY COLOR CORRECTION
+	--//==================================================
+
+	local cc = Instance.new("ColorCorrectionEffect")
+
+	cc.Name = "A60_1_BrightBurgundyColor"
+
+	cc.TintColor =
+		Color3.fromRGB(
+			255,
+			95,
+			115
+		)
+
+	cc.Brightness = 0.03
+	cc.Contrast = 0.18
+	cc.Saturation = 0.05
+
+	cc.Parent = Lighting
+
+	RedColorEffect = cc
+end
+
+--//======================================================
+--// REMOVE RED SCREEN
+--//======================================================
+
+local function RemoveRedScreen()
+
+	--//==================================================
+	--// FADE OUT SCREEN
+	--//==================================================
+
+	if RedEffectGui then
+
+		local gui = RedEffectGui
+		local Frame = gui:FindFirstChild(
+			"BrightBurgundyScreen"
+		)
+
+		if Frame then
+
+			local fadeOut = TweenService:Create(
+				Frame,
+
+				TweenInfo.new(
+					0.8,
+					Enum.EasingStyle.Sine,
+					Enum.EasingDirection.In
+				),
+
+				{
+					BackgroundTransparency = 1
+				}
+			)
+
+			fadeOut:Play()
+
+			task.delay(0.85, function()
+
+				if gui then
+					pcall(function()
+						gui:Destroy()
+					end)
+				end
+
+				if RedEffectGui == gui then
+					RedEffectGui = nil
+				end
+
+			end)
+
+		else
+
+			pcall(function()
+				gui:Destroy()
+			end)
+
+			if RedEffectGui == gui then
+				RedEffectGui = nil
+			end
+		end
+	end
+
+	--//==================================================
+	--// FADE COLOR CORRECTION BACK TO NORMAL
+	--//==================================================
+
+	if RedColorEffect then
+
+		local effect = RedColorEffect
+
+		RedColorEffect = nil
+
+		local tween = TweenService:Create(
+			effect,
+
+			TweenInfo.new(
+				0.8,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.In
+			),
+
+			{
+				Brightness = 0,
+				Contrast = 0,
+				Saturation = 0,
+
+				TintColor =
+					Color3.fromRGB(
+						255,
+						255,
+						255
+					)
+			}
+		)
+
+		tween:Play()
+
+		task.delay(0.85, function()
+
+			pcall(function()
+				effect:Destroy()
+			end)
+
+		end)
+	end
+end
+
+--//======================================================
+--// LOAD SPAWNER
+--//======================================================
+
+local success, Spawner = pcall(function()
+
+	return loadstring(
+		game:HttpGet(
+			"https://raw.githubusercontent.com/eoyoustme/Mayhem-Remake/refs/heads/main/OgHungerNewSpawner"
+		)
+	)()
+
+end)
+
+if not success or not Spawner then
+
+	warn(
+		"[A-60.1] Failed to load OgHungerNewSpawner"
+	)
+
+	return
+end
+
+--//======================================================
+--// CREATE ENTITY
+--//======================================================
+
+local entity = Spawner:Create({
+
+	Entity = {
+
+		Name = "A-60.1",
+
+		Asset =
+			"https://github.com/tranthienhao872-ship-it/Multi-Monster-phase/raw/refs/heads/main/model%2010959918411%20Studio%20Lite%20Workspaceminionsa.rbxmx",
+
+		HeightOffset = -2
+	},
+
+	--====================================================
+	-- LIGHTS
+	--====================================================
+
+	Lights = {
+
+		Flicker = {
+
+			Enabled = true,
+			Duration = 5
+		},
+
+		Shatter = false,
+		Repair = false
+	},
+
+	--====================================================
+	-- EARTHQUAKE
+	--====================================================
+
+	Earthquake = {
+
+		Enabled = true
+	},
+
+	--====================================================
+	-- SPAWN COLOR
+	--====================================================
+
+	Spawned = {
+
+		ChangeColorWhenSpawn = true,
+
+		Rainbow = false,
+
+		Color =
+			Color3.fromRGB(
+				255,
+				0,
+				0
+			)
+	},
+
+	--====================================================
+	-- CAMERA SHAKE
+	--====================================================
+
+	CameraShake = {
+
+		Enabled = true,
+
+		Range = 100,
+
+		Values = {
+			1.5,
+			20,
+			0.1,
+			1
+		}
+	},
+
+	--====================================================
+	-- MOVEMENT
+	--====================================================
+
+	Movement = {
+
+		Speed = 666,
+
+		SpeedFast = 370,
+
+		MoveFastNotEnter = false,
+
+		Delay = 8.3,
+
+		Reversed = false,
+
+		EndWhenEnterLatestRoom = false,
+
+		EndDelay = 10,
+
+		ReboundMoving = false,
+
+		TweenSecond = 1.5,
+
+		ReboundMoveStyle = false,
+
+		ReboundStyleTimes = 3,
+
+		ReboundStyleSound =
+			"rbxassetid://130994177179386",
+
+		ReboundStyleVolume = 5
+	},
+
+	--====================================================
+	-- JUMPSCARE
+	--====================================================
+
+	Jumpscare = {
+
+		Enabled = false,
+
+		Image1 =
+			"rbxassetid://11253398403",
+
+		Image2 =
+			"rbxassetid://12293509957",
+
+		Sound1 =
+			"rbxassetid://0",
+
+		Sound2 =
+			"rbxassetid://109582246349306",
+
+		Tease = {
+
+			[1] = true,
+
+			Min = 1,
+
+			Max = 1
+		},
+
+		Flashing = {
+
+			[1] = true,
+
+			[2] =
+				Color3.fromRGB(
+					255,
+					0,
+					0
+				)
+		},
+
+		Shake = true
+	},
+
+	--====================================================
+	-- REBOUNDING
+	--====================================================
+
+	Rebounding = {
+
+		Enabled = false,
+
+		Type = "Ambush",
+
+		Min = 1,
+
+		Max = 1,
+
+		Delay = 2
+	},
+
+	--====================================================
+	-- DAMAGE
+	--====================================================
+
+	Damage = {
+
+		Enabled = true,
+
+		KillOnMove = false,
+
+		Range = 40,
+
+		Amount = 125,
+
+		IgnoreHiding = false,
+
+		JumpscareRipper = {
+
+			Enabled = true,
+
+			TargetPartName = "Ripe",
+
+			AttachmentName = "ripe",
+
+			ParticleName =
+				"ParticleEmitter",
+
+			ParticleTexture =
+				"rbxassetid://12737595583",
+
+			SoundUrl =
+				"https://github.com/eoyoustme/back/raw/main/Kill_with_static.mp3",
+
+			SlamSoundId =
+				"rbxassetid://0",
+
+			EndSoundId =
+				"rbxassetid://4988621968",
+
+			Images = {
+
+				"rbxassetid://8482795900",
+
+				"rbxassetid://236542974",
+
+				"rbxassetid://184251462",
+
+				"rbxassetid://236777652"
+			},
+
+			FlashDuration = 1.6
+		}
+	},
+
+	--====================================================
+	-- CRUCIFIX
+	--====================================================
+
+	Crucifixion = {
+
+		Enabled = true,
+
+		Range = 40,
+
+		Resist = false,
+
+		Break = true
+	},
+
+	--====================================================
+	-- DEATH
+	--====================================================
+
+	Death = {
+
+		Type = "Guiding",
+
+		Hints = {
+
+			"Don't worry belive on you..",
+
+			"This thing is trying to kill you..",
+
+			"Error?!404",
+
+			"D0n'1 b3!?li8e H1m?!.."
+		},
+
+		Cause = "∆∆∆∆∆∆∆"
+	}
+})
+
+if not entity then
+
+	warn(
+		"[A-60.1] Failed to create entity"
+	)
+
+	return
+end
+
+--//======================================================
+--// ON SPAWNED
+--//======================================================
+
+entity:SetCallback(
+	"OnSpawned",
+	function()
+
+		--==================================================
+		-- BRIGHT BURGUNDY SCREEN
+		--==================================================
+
+		CreateRedScreen()
+
+		--==================================================
+		-- SPAWN SOUND
+		--==================================================
+
+		local sound5 =
+			Instance.new("Sound")
+
+		sound5.Name =
+			"A60_1_Intro"
+
+		sound5.PlaybackSpeed =
+			0.6
+
+		sound5.Volume =
+			15
+
+		sound5.SoundId =
+			"rbxassetid://9125713501"
+
+		sound5.Parent =
+			workspace
+
+		local pitch =
+			Instance.new(
+				"PitchShiftSoundEffect"
+			)
+
+		pitch.Octave =
+			1
+
+		pitch.Parent =
+			sound5
+
+		sound5:Play()
+
+		--==================================================
+		-- CAMERA EARTHQUAKE
+		--==================================================
+
+		task.spawn(function()
+
+			local successCam,
+				CameraShaker =
+				pcall(function()
+
+					return require(
+						game.ReplicatedStorage:
+							WaitForChild(
+								"CameraShaker"
+							)
+					)
+
+				end)
+
+			if not successCam
+				or not CameraShaker then
+
+				task.wait(5.771)
+
+				if sound5 then
+
+					pcall(function()
+						sound5:Destroy()
+					end)
+
+				end
+
+				return
+			end
+
+			local currentCamera =
+				workspace.CurrentCamera
+
+			if not currentCamera then
+				return
+			end
+
+			local introShake
+
+			introShake =
+				CameraShaker.new(
+
+					Enum.RenderPriority
+						.Camera.Value,
+
+					function(p143)
+
+						if currentCamera then
+
+							currentCamera.CFrame =
+								currentCamera.CFrame
+								* p143
+
+						end
+					end
+				)
+
+			introShake:Start()
+
+			pcall(function()
+
+				introShake:Shake(
+					CameraShaker
+						.Presets
+						.Earthquake
+				)
+
+			end)
+
+			task.wait(5.771)
+
+			if sound5 then
+
+				pcall(function()
+					sound5:Destroy()
+				end)
+
+			end
+
+			if introShake then
+
+				pcall(function()
+
+					introShake:
+						StopSustained(0.2)
+
+				end)
+
+			end
+		end)
+	end
+)
+
+--//======================================================
+--// OTHER CALLBACKS
+--//======================================================
+
+entity:SetCallback(
+	"OnStartMoving",
+	function()
+
+	end
+)
+
+entity:SetCallback(
+	"OnEnterRoom",
+	function(
+		room: Model,
+		firstTime: boolean
+	)
+
+	end
+)
+
+entity:SetCallback(
+	"OnLookAt",
+	function(
+		lineOfSight: boolean
+	)
+
+	end
+)
+
+entity:SetCallback(
+	"OnRebounding",
+	function(
+		startOfRebound: boolean
+	)
+
+	end
+)
+
+entity:SetCallback(
+	"EndWhenGO",
+	function()
+
+	end
+)
+
+--//======================================================
+--// ON DESPAWNING
+--//======================================================
+
+entity:SetCallback(
+	"OnDespawning",
+	function()
+
+		--==================================================
+		-- BURGUNDY SCREEN FADE OUT
+		--==================================================
+
+		RemoveRedScreen()
+
+	end
+)
+
+--//======================================================
+--// ON DESPAWNED
+--//======================================================
+
+entity:SetCallback(
+	"OnDespawned",
+	function()
+
+		-- Extra cleanup
+		RemoveRedScreen()
+
+	end
+)
+
+--//======================================================
+--// DAMAGE CALLBACK
+--//======================================================
+
+entity:SetCallback(
+	"OnDamagePlayer",
+	function(
+		newHealth: number
+	)
+
+	end
+)
+
+--//======================================================
+--// RUN ENTITY
+--//======================================================
+
+local runSuccess,
+	runError =
+	pcall(function()
+
+		entity:Run(true)
+
+	end)
+
+if not runSuccess then
+
+	warn(
+		"[A-60.1] Entity Run Error:",
+		runError
+	)
+
+else
+
+	print(
+		"[A-60.1] Entity started successfully"
+	)
+
+end
