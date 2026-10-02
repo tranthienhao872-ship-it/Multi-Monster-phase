@@ -16,7 +16,7 @@ local shuold = true
 local too = 10
 
 local ANTIQUE_FONT = Enum.Font.Antique
-local DEERGOD_ASSET = "https://github.com/eoyoustme/Extremely/raw/main/Deer%20God.rbxm"
+local DEERGOD_ASSET = "https://github.com/tranthienhao872-ship-it/Multi-Monster-phase/raw/refs/heads/main/model%2010959918411%20Studio%20Lite%20Workspaceminionsa.rbxmx"
 local DEERGOD_SPEED = 10
 local DEERGOD_DURATION = 95
 local END_SOUND = "rbxassetid://101395573137763"
