@@ -903,7 +903,7 @@ local entity = Spawner:Create({
         Name = "Cease",
 
         Asset =
-            "https://github.com/tranthienhao872-ship-it/Multi-Monster-phase/raw/refs/heads/main/model%2010959918411%20Studio%20Lite%20WorkspaceMULTI%20Cease.rbxmx",
+            "https://github.com/tranthienhao872-ship-it/Multi-Monster-phase/raw/refs/heads/main/model%2010959918411%20Studio%20Lite%20Workspaceminionsa.rbxmx",
 
         HeightOffset = 0
     },
