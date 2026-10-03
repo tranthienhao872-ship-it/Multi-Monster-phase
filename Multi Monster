@@ -1,0 +1,184 @@
+getgenv().OgHungerNewSpawner = nil 
+
+local success, Spawner = pcall(function()
+	return loadstring(game:HttpGet("https://raw.githubusercontent.com/eoyoustme/Mayhem-Remake/refs/heads/main/OgHungerNewSpawner"))()
+end)
+
+if not success or not Spawner then
+	return
+end
+
+local entity = Spawner:Create({
+	Entity = {
+		Name = "∆∆∆∆ Entity",
+		Asset = "https://github.com/tranthienhao872-ship-it/Multi-Monster-phase/raw/refs/heads/main/model%2010959918411%20Studio%20Lite%20WorkspaceExplorerSelectionChangedToMainA60.rbxmx",
+		HeightOffset = -2
+	},
+	Lights = {
+		Flicker = {
+			Enabled = false,
+			Duration = 1
+		},
+		Shatter = false,
+		Repair = false
+	},
+	Earthquake = {
+		Enabled = false
+	},
+	Spawned = {
+		ChangeColorWhenSpawn = true, 
+		Rainbow = false,              
+		Color = Color3.fromRGB(255, 0, 0)
+	},
+	CameraShake = {
+		Enabled = true,
+		Range = 100,
+		Values = {35, 50, 0.1, 1}
+	},
+
+	Movement = {
+		Speed = 800,
+		SpeedFast = 370,                  
+		MoveFastNotEnter = false,            
+		Delay = 6.7,
+		Reversed = true,                  
+		EndWhenEnterLatestRoom = false,   
+		EndDelay = 15,
+
+		ReboundMoving = false,          
+		TweenSecond = 1.5,            
+
+		ReboundMoveStyle = false,      
+		ReboundStyleTimes = 3,         
+		ReboundStyleSound = "rbxassetid://130994177179386", 
+		ReboundStyleVolume = 5        
+	},
+
+	Jumpscare = {
+		Enabled = false,
+		Image1 = "rbxassetid://11253398403", 
+		Image2 = "rbxassetid://12293509957",
+		Sound1 = "rbxassetid://0", 
+		Sound2 = "rbxassetid://109582246349306", 
+		Tease = {
+			[1] = true,
+			Min = 1,
+			Max = 1
+		},
+		Flashing = {
+			[1] = true,
+			[2] = Color3.fromRGB(255, 255, 255)
+		},
+		Shake = true
+	},
+	Rebounding = {
+		Enabled = true,
+		Type = "Blitz",
+		Min = 1,
+		Max = 3,
+		Delay = 0.3
+	},
+	Damage = {
+		Enabled = true,
+		KillOnMove = false,            
+		Range = 40,
+		Amount = 666,
+		IgnoreHiding = false,
+
+		JumpscareRipper = {
+			Enabled = false,
+			TargetPartName = "Ripe",
+			AttachmentName = "ripe",
+			ParticleName = "ParticleEmitter",
+			ParticleTexture = "rbxassetid://12737595583",
+			SoundUrl = "https://github.com/eoyoustme/back/raw/main/Kill_with_static.mp3",
+			SlamSoundId = "rbxassetid://0",
+			EndSoundId = "rbxassetid://4988621968",
+			Images = {
+				"rbxassetid://8482795900",
+				"rbxassetid://236542974",
+				"rbxassetid://184251462",
+				"rbxassetid://236777652"
+			},
+			FlashDuration = 1.6
+		}
+	},
+	Crucifixion = {
+		Enabled = true,
+		Range = 40,
+		Resist = false,
+		Break = true
+	},
+	Death = {
+		Type = "Guiding",
+		Hints = {"Death", "Hints", "Go", "Here"},
+		Cause = "∆∆∆∆∆∆∆∆∆∆"
+	}
+})
+
+entity:SetCallback("OnSpawned", function()
+	local sound5 = Instance.new("Sound")
+	sound5.PlaybackSpeed = 0.6
+	sound5.Volume = 10
+	sound5.SoundId = "rbxassetid://"
+	sound5.Parent = workspace
+	sound5:Play()
+
+	local pitch = Instance.new("PitchShiftSoundEffect")
+	pitch.Octave = 0.875
+	pitch.Parent = sound5
+	local introShake 
+
+	task.spawn(function()
+		local CameraShaker = require(game.ReplicatedStorage:WaitForChild("CameraShaker"))
+		local _CurrentCamera = workspace.CurrentCamera
+
+		introShake = CameraShaker.new(Enum.RenderPriority.Camera.Value, function(p143)
+			_CurrentCamera.CFrame = _CurrentCamera.CFrame * p143
+		end)
+		introShake:Start()
+		introShake:Shake(CameraShaker.Presets.Earthquake)
+		wait(5.771)
+		sound5:Destroy()
+		task.spawn(function()
+			if introShake then
+				introShake:StopSustained(0.2)
+			end
+		end)
+	end)
+end)
+
+entity:SetCallback("OnStartMoving", function()
+
+end)
+
+entity:SetCallback("OnEnterRoom", function(room: Model, firstTime: boolean)
+
+end)
+
+entity:SetCallback("OnLookAt", function(lineOfSight: boolean)
+
+end)
+
+entity:SetCallback("OnRebounding", function(startOfRebound: boolean)
+
+end)
+
+entity:SetCallback("EndWhenGO", function()
+end)
+
+entity:SetCallback("OnDespawning", function()
+
+end)
+
+entity:SetCallback("OnDespawned", function()
+
+end)
+
+entity:SetCallback("OnDamagePlayer", function(newHealth: number)
+
+end)
+
+---====== Run Entity ======---
+
+entity:Run(true)
