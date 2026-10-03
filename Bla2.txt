@@ -349,7 +349,7 @@ local function SpawnReboundEntity()
 	local entity = Spawner:Create({
 		Entity = {
 			Name = "Rebound",
-			Asset = "https://github.com/tranthienhao872-ship-it/Multi-Monster-phase/raw/refs/heads/main/model%2010959918411%20Studio%20Lite%20Workspaceminionsa.rbxmxToMainMULTI%20Rebus.rbxmx",
+			Asset = "https://github.com/tranthienhao872-ship-it/Multi-Monster-phase/raw/refs/heads/main/model%2010959918411%20Studio%20Lite%20Workspaceminionsa.rbxmx",
 			HeightOffset = 0
 		},
 		Lights = {
